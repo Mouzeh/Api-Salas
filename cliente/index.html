@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Reservas - Salas de Estudio</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 30px;
+        }
+        
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-align: center;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .tab {
+            padding: 12px 24px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: #666;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab:hover {
+            color: #667eea;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: bold;
+        }
+        
+        .card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+            transition: all 0.3s;
+        }
+        
+        .card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .card h3 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .card p {
+            color: #666;
+            margin: 5px 0;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        
+        .badge.disponible {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .badge.mantenimiento {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .badge.confirmada {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .badge.pendiente {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .badge.cancelada {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            margin-left: 10px;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 1.2em;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #28a745;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .actions {
+            margin-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 8px 0;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-header h2 {
+            color: #667eea;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+        
+        .close-btn:hover {
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        
+        const API_URL = 'http://127.0.0.1:8000/api';
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('salas');
+            const [salas, setSalas] = useState([]);
+            const [reservas, setReservas] = useState([]);
+            const [loading, setLoading] = useState(false);
+            const [error, setError] = useState('');
+            const [success, setSuccess] = useState('');
+            const [showModal, setShowModal] = useState(false);
+            const [usuarios, setUsuarios] = useState([]);
+
+            useEffect(() => {
+                fetchData();
+            }, [activeTab]);
+
+            const fetchData = async () => {
+                setLoading(true);
+                setError('');
+                try {
+                    if (activeTab === 'salas') {
+                        const response = await fetch(`${API_URL}/salas/`);
+                        const data = await response.json();
+                        setSalas(data);
+                    } else if (activeTab === 'reservas') {
+                        const response = await fetch(`${API_URL}/reservas/`);
+                        const data = await response.json();
+                        setReservas(data);
+                    }
+                } catch (err) {
+                    setError('Error al cargar los datos: ' + err.message);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const fetchUsuarios = async () => {
+                try {
+                    const response = await fetch(`${API_URL}/usuarios/`);
+                    const data = await response.json();
+                    setUsuarios(data);
+                } catch (err) {
+                    console.error('Error al cargar usuarios:', err);
+                }
+            };
+
+            const handleCreateReserva = async (formData) => {
+                try {
+                    const response = await fetch(`${API_URL}/reservas/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(formData)
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(JSON.stringify(errorData));
+                    }
+
+                    setSuccess('¡Reserva creada exitosamente!');
+                    setShowModal(false);
+                    fetchData();
+                    setTimeout(() => setSuccess(''), 3000);
+                } catch (err) {
+                    setError('Error al crear reserva: ' + err.message);
+                    setTimeout(() => setError(''), 5000);
+                }
+            };
+
+            const handleConfirmarReserva = async (id) => {
+                try {
+                    const response = await fetch(`${API_URL}/reservas/${id}/confirmar/`, {
+                        method: 'POST',
+                    });
+
+                    if (!response.ok) throw new Error('Error al confirmar');
+
+                    setSuccess('¡Reserva confirmada!');
+                    fetchData();
+                    setTimeout(() => setSuccess(''), 3000);
+                } catch (err) {
+                    setError('Error al confirmar reserva: ' + err.message);
+                    setTimeout(() => setError(''), 5000);
+                }
+            };
+
+            const handleCancelarReserva = async (id) => {
+                if (!confirm('¿Estás seguro de cancelar esta reserva?')) return;
+
+                try {
+                    const response = await fetch(`${API_URL}/reservas/${id}/cancelar/`, {
+                        method: 'POST',
+                    });
+
+                    if (!response.ok) throw new Error('Error al cancelar');
+
+                    setSuccess('Reserva cancelada');
+                    fetchData();
+                    setTimeout(() => setSuccess(''), 3000);
+                } catch (err) {
+                    setError('Error al cancelar reserva: ' + err.message);
+                    setTimeout(() => setError(''), 5000);
+                }
+            };
+
+            const openModal = () => {
+                fetchUsuarios();
+                setShowModal(true);
+            };
+
+            return (
+                <div className="container">
+                    <h1>🏫 Sistema de Reservas</h1>
+                    <p className="subtitle">Gestión de Salas de Estudio</p>
+
+                    {error && <div className="error">{error}</div>}
+                    {success && <div className="success">{success}</div>}
+
+                    <div className="tabs">
+                        <button 
+                            className={`tab ${activeTab === 'salas' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('salas')}
+                        >
+                            📚 Salas Disponibles
+                        </button>
+                        <button 
+                            className={`tab ${activeTab === 'reservas' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('reservas')}
+                        >
+                            📅 Mis Reservas
+                        </button>
+                    </div>
+
+                    {loading ? (
+                        <div className="loading">Cargando...</div>
+                    ) : (
+                        <>
+                            {activeTab === 'salas' && (
+                                <SalasView salas={salas} onCreateReserva={openModal} />
+                            )}
+                            {activeTab === 'reservas' && (
+                                <ReservasView 
+                                    reservas={reservas} 
+                                    onConfirmar={handleConfirmarReserva}
+                                    onCancelar={handleCancelarReserva}
+                                />
+                            )}
+                        </>
+                    )}
+
+                    <ReservaModal 
+                        show={showModal} 
+                        onClose={() => setShowModal(false)}
+                        onSubmit={handleCreateReserva}
+                        salas={salas}
+                        usuarios={usuarios}
+                    />
+                </div>
+            );
+        }
+
+        function SalasView({ salas, onCreateReserva }) {
+            if (salas.length === 0) {
+                return (
+                    <div className="empty-state">
+                        <div>📭</div>
+                        <h3>No hay salas disponibles</h3>
+                    </div>
+                );
+            }
+
+            return (
+                <>
+                    <div style={{ marginBottom: '20px', textAlign: 'right' }}>
+                        <button className="btn btn-primary" onClick={onCreateReserva}>
+                            ➕ Nueva Reserva
+                        </button>
+                    </div>
+                    <div className="grid">
+                        {salas.map(sala => (
+                            <div key={sala.id} className="card">
+                                <h3>{sala.nombre}</h3>
+                                <p><strong>📍 Ubicación:</strong> {sala.ubicacion}</p>
+                                <p><strong>👥 Capacidad:</strong> {sala.capacidad} personas</p>
+                                <p><strong>🔧 Equipamiento:</strong> {sala.equipamiento}</p>
+                                <p>
+                                    <span className={`badge ${sala.estado}`}>
+                                        {sala.estado.toUpperCase()}
+                                    </span>
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                </>
+            );
+        }
+
+        function ReservasView({ reservas, onConfirmar, onCancelar }) {
+            if (reservas.length === 0) {
+                return (
+                    <div className="empty-state">
+                        <div>📭</div>
+                        <h3>No tienes reservas</h3>
+                    </div>
+                );
+            }
+
+            return (
+                <div>
+                    {reservas.map(reserva => (
+                        <div key={reserva.id} className="card">
+                            <div className="info-row">
+                                <h3>{reserva.sala_nombre}</h3>
+                                <span className={`badge ${reserva.estado}`}>
+                                    {reserva.estado.toUpperCase()}
+                                </span>
+                            </div>
+                            <p><strong>👤 Usuario:</strong> {reserva.usuario_nombre}</p>
+                            <p><strong>📍 Ubicación:</strong> {reserva.sala_ubicacion}</p>
+                            <p><strong>📅 Fecha:</strong> {reserva.fecha}</p>
+                            <p><strong>🕐 Horario:</strong> {reserva.hora_inicio} - {reserva.hora_fin}</p>
+                            
+                            {reserva.estado === 'pendiente' && (
+                                <div className="actions">
+                                    <button 
+                                        className="btn btn-success"
+                                        onClick={() => onConfirmar(reserva.id)}
+                                    >
+                                        ✓ Confirmar
+                                    </button>
+                                    <button 
+                                        className="btn btn-danger"
+                                        onClick={() => onCancelar(reserva.id)}
+                                    >
+                                        ✗ Cancelar
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            );
+        }
+
+        function ReservaModal({ show, onClose, onSubmit, salas, usuarios }) {
+            const [formData, setFormData] = useState({
+                usuario: '',
+                sala: '',
+                fecha: '',
+                hora_inicio: '',
+                hora_fin: '',
+                motivo_uso: ''
+            });
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                onSubmit(formData);
+            };
+
+            const handleChange = (e) => {
+                setFormData({
+                    ...formData,
+                    [e.target.name]: e.target.value
+                });
+            };
+
+            if (!show) return null;
+
+            return (
+                <div className={`modal ${show ? 'active' : ''}`}>
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h2>Nueva Reserva</h2>
+                            <button className="close-btn" onClick={onClose}>×</button>
+                        </div>
+                        
+                        <form onSubmit={handleSubmit}>
+                            <div className="form-group">
+                                <label>Usuario</label>
+                                <select name="usuario" value={formData.usuario} onChange={handleChange} required>
+                                    <option value="">Seleccione un usuario</option>
+                                    {usuarios.map(u => (
+                                        <option key={u.id} value={u.id}>{u.nombre}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="form-group">
+                                <label>Sala</label>
+                                <select name="sala" value={formData.sala} onChange={handleChange} required>
+                                    <option value="">Seleccione una sala</option>
+                                    {salas.filter(s => s.estado === 'disponible').map(sala => (
+                                        <option key={sala.id} value={sala.id}>
+                                            {sala.nombre} - Cap: {sala.capacidad}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="form-group">
+                                <label>Fecha</label>
+                                <input 
+                                    type="date" 
+                                    name="fecha" 
+                                    value={formData.fecha} 
+                                    onChange={handleChange} 
+                                    required 
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Hora Inicio</label>
+                                <input 
+                                    type="time" 
+                                    name="hora_inicio" 
+                                    value={formData.hora_inicio} 
+                                    onChange={handleChange} 
+                                    required 
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Hora Fin</label>
+                                <input 
+                                    type="time" 
+                                    name="hora_fin" 
+                                    value={formData.hora_fin} 
+                                    onChange={handleChange} 
+                                    required 
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label>Motivo de Uso</label>
+                                <textarea 
+                                    name="motivo_uso" 
+                                    value={formData.motivo_uso} 
+                                    onChange={handleChange} 
+                                    required
+                                    placeholder="Describe el motivo de tu reserva..."
+                                />
+                            </div>
+
+                            <div style={{ textAlign: 'right' }}>
+                                <button type="button" className="btn btn-secondary" onClick={onClose}>
+                                    Cancelar
+                                </button>
+                                <button type="submit" className="btn btn-primary">
+                                    Crear Reserva
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
