@@ -47,6 +47,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'reservas_proyecto.middleware.JWTAuthMiddleware'
 ]
 
 ROOT_URLCONF = 'reservas_proyecto.urls'

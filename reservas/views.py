@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework.views import APIView  # ✅ Importar APIView
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from .models import Sala, Reserva
@@ -14,6 +15,25 @@ from .serializers import (
 from .permissions import IsAdminUser, IsOwnerOrAdmin, ReadOnlyOrAdmin
 
 Usuario = get_user_model()
+
+
+# ============================
+# 🔹 VISTA PARA VERIFICAR AUTENTICACIÓN
+# ============================
+class CheckAuthView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        return Response({
+            'is_authenticated': True,
+            'user': {
+                'id': request.user.id,
+                'email': request.user.email,
+                'nombre_completo': request.user.get_full_name(),
+                'rol': request.user.rol,
+                'es_admin': request.user.es_admin,
+            }
+        })
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -180,4 +200,3 @@ class ReservaViewSet(viewsets.ModelViewSet):
         queryset = self.get_queryset().filter(estado='pendiente')
         serializer = ReservaListSerializer(queryset, many=True)
         return Response(serializer.data)
-

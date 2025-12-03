@@ -301,75 +301,217 @@
     <script>
         // Datos del usuario (se cargarán del localStorage o API)
         let currentUser = null;
-        let token = localStorage.getItem('access_token');
-
-        // Verificar autenticación
-        if (!token) {
-            window.location.href = '/login/';
-        }
-
-        // Navegación entre tabs
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.addEventListener('click', function() {
-                // Actualizar tabs activos
-                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-                this.classList.add('active');
-                
-                // Mostrar contenido correspondiente
-                const tabId = this.getAttribute('data-tab');
-                document.querySelectorAll('.tab-content').forEach(content => {
-                    content.classList.remove('active');
-                });
-                document.getElementById(tabId).classList.add('active');
-            });
+        
+        // Al inicio del script, añade esto:
+        document.addEventListener('DOMContentLoaded', function() {
+            // Verificar si hay token
+            const token = localStorage.getItem('access_token');
+            
+            if (!token) {
+                // No hay token, redirigir a login
+                window.location.href = '/login/';
+                return;
+            }
+            
+            // Verificar si el token es válido
+            checkTokenValidity(token);
         });
 
-        // Botones que cambian de tab
-        document.querySelectorAll('[data-tab]').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const tabId = this.getAttribute('data-tab');
-                document.querySelector(`[data-tab="${tabId}"]`).click();
-            });
-        });
-
-        // Cerrar sesión
-        document.getElementById('logout-btn').addEventListener('click', function() {
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('refresh_token');
-            localStorage.removeItem('user');
-            window.location.href = '/login/';
-        });
-
-        // Cargar datos del usuario
-        async function loadUserData() {
+        // Función para verificar validez del token
+        async function checkTokenValidity(token) {
             try {
-                const response = await fetch('/api/usuarios/me/', {
+                const response = await fetch('/api/auth/check/', {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 });
                 
-                if (!response.ok) throw new Error('Error al cargar usuario');
+                if (response.status === 401) {
+                    // Token inválido o expirado, intentar refresh
+                    await refreshToken();
+                } else if (response.ok) {
+                    // Token válido, cargar datos
+                    loadInitialData();
+                } else {
+                    // Otro error
+                    console.error('Error verificando token');
+                    redirectToLogin();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                redirectToLogin();
+            }
+        }
+
+        // Función refresh token corregida
+        async function refreshToken() {
+            const refreshToken = localStorage.getItem('refresh_token');
+            
+            if (!refreshToken) {
+                redirectToLogin();
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/auth/refresh/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ refresh: refreshToken })
+                });
                 
-                currentUser = await response.json();
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Refresh failed:', errorData);
+                    redirectToLogin();
+                    return;
+                }
                 
-                // Actualizar UI
-                document.getElementById('profile-name').textContent = currentUser.nombre_completo;
-                document.getElementById('profile-email').textContent = currentUser.email;
-                document.getElementById('profile-carrera').textContent = currentUser.carrera;
-                document.getElementById('profile-telefono').textContent = currentUser.telefono;
-                document.getElementById('profile-fecha-registro').textContent = 
-                    new Date(currentUser.fecha_registro).toLocaleDateString('es-CL');
-                document.getElementById('user-email-display').textContent = currentUser.email;
-                document.getElementById('profile-total-reservas').textContent = currentUser.total_reservas;
+                const data = await response.json();
+                localStorage.setItem('access_token', data.access);
+                
+                // Si hay nuevo refresh token, guardarlo
+                if (data.refresh) {
+                    localStorage.setItem('refresh_token', data.refresh);
+                }
+                
+                // Reintentar la operación original
+                loadInitialData();
                 
             } catch (error) {
-                showAlert('Error al cargar datos del usuario', 'error');
+                console.error('Refresh error:', error);
+                redirectToLogin();
             }
+        }
+
+        // Redirigir a login
+        function redirectToLogin() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('user');
+            window.location.href = '/login/';
+        }
+
+        // Cargar datos iniciales
+        async function loadInitialData() {
+            const token = localStorage.getItem('access_token');
+            
+            try {
+                // Cargar datos del usuario
+                const userResponse = await fetch('/api/usuarios/me/', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!userResponse.ok) {
+                    if (userResponse.status === 401) {
+                        await refreshToken();
+                        return;
+                    }
+                    throw new Error('Error cargando usuario');
+                }
+                
+                currentUser = await userResponse.json();
+                
+                // Inicializar navegación y eventos
+                initNavigation();
+                initEvents();
+                
+                // Cargar reservas
+                await loadUserReservas();
+                
+                // Cargar salas disponibles
+                await loadSalasDisponibles();
+                
+                // Actualizar UI con datos del usuario
+                updateUserUI();
+                
+            } catch (error) {
+                console.error('Error cargando datos iniciales:', error);
+                showAlert('Error cargando datos', 'error');
+            }
+        }
+
+        // Actualizar UI con datos del usuario
+        function updateUserUI() {
+            if (currentUser) {
+                document.getElementById('profile-name').textContent = currentUser.nombre_completo;
+                document.getElementById('profile-email').textContent = currentUser.email;
+                document.getElementById('user-email-display').textContent = currentUser.email;
+                document.getElementById('profile-carrera').textContent = currentUser.carrera || 'No especificada';
+                document.getElementById('profile-telefono').textContent = currentUser.telefono || 'No especificado';
+                document.getElementById('profile-fecha-registro').textContent = 
+                    currentUser.fecha_registro ? new Date(currentUser.fecha_registro).toLocaleDateString('es-CL') : 'N/A';
+                document.getElementById('profile-total-reservas').textContent = currentUser.total_reservas || '0';
+            }
+        }
+
+        // Inicializar navegación
+        function initNavigation() {
+            // Navegación entre tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // Actualizar tabs activos
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Mostrar contenido correspondiente
+                    const tabId = this.getAttribute('data-tab');
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+
+            // Botones que cambian de tab
+            document.querySelectorAll('[data-tab]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const tabId = this.getAttribute('data-tab');
+                    document.querySelector(`[data-tab="${tabId}"]`).click();
+                });
+            });
+        }
+
+        // Inicializar eventos
+        function initEvents() {
+            // Configurar fecha mínima (hoy)
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('fecha').min = today;
+            
+            // Programar actualizaciones periódicas (cada 30 segundos)
+            setInterval(() => {
+                if (document.getElementById('mis-reservas').classList.contains('active')) {
+                    loadUserReservas();
+                }
+                if (document.getElementById('salas-disponibles').classList.contains('active')) {
+                    loadSalasDisponibles();
+                }
+            }, 30000);
+        }
+
+        // Función auxiliar para obtener el CSRF token
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
         }
 
         // Cargar reservas del usuario
         async function loadUserReservas() {
+            const token = localStorage.getItem('access_token');
+            
             try {
                 const response = await fetch('/api/reservas/mis_reservas/', {
                     headers: {
@@ -390,6 +532,8 @@
 
         // Cargar salas disponibles
         async function loadSalasDisponibles() {
+            const token = localStorage.getItem('access_token');
+            
             try {
                 const response = await fetch('/api/salas/disponibles/', {
                     headers: {
@@ -566,6 +710,8 @@
         async function confirmarReserva(reservaId) {
             if (!confirm('¿Confirmar esta reserva?')) return;
             
+            const token = localStorage.getItem('access_token');
+            
             try {
                 const response = await fetch(`/api/reservas/${reservaId}/confirmar/`, {
                     method: 'POST',
@@ -589,6 +735,8 @@
         async function cancelarReserva(reservaId) {
             if (!confirm('¿Cancelar esta reserva?')) return;
             
+            const token = localStorage.getItem('access_token');
+            
             try {
                 const response = await fetch(`/api/reservas/${reservaId}/cancelar/`, {
                     method: 'POST',
@@ -610,6 +758,8 @@
 
         // Ver detalles de reserva
         async function verDetallesReserva(reservaId) {
+            const token = localStorage.getItem('access_token');
+            
             try {
                 const response = await fetch(`/api/reservas/${reservaId}/`, {
                     headers: {
@@ -714,6 +864,8 @@
                 return;
             }
             
+            const token = localStorage.getItem('access_token');
+            
             try {
                 const response = await fetch('/api/reservas/', {
                     method: 'POST',
@@ -741,6 +893,38 @@
                 
             } catch (error) {
                 showAlert('Error al crear reserva: ' + error.message, 'error');
+            }
+        });
+
+        // Cerrar sesión - CORREGIDO
+        document.getElementById('logout-btn').addEventListener('click', async function() {
+            try {
+                const token = localStorage.getItem('access_token');
+                
+                // 1. Llamar al endpoint de logout del backend
+                const response = await fetch('/logout/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                        'X-CSRFToken': getCookie('csrftoken')
+                    },
+                    credentials: 'same-origin'
+                });
+                
+                // 2. Limpiar localStorage
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('refresh_token');
+                localStorage.removeItem('user');
+                
+                // 3. Redirigir al login
+                window.location.href = '/login/';
+                
+            } catch (error) {
+                console.error('Error en logout:', error);
+                // Si falla, al menos limpiar y redirigir
+                localStorage.clear();
+                window.location.href = '/login/';
             }
         });
 
@@ -789,74 +973,6 @@
         document.querySelector('.modal').addEventListener('click', function(e) {
             e.stopPropagation();
         });
-
-        // Configurar fecha mínima (hoy)
-        const today = new Date().toISOString().split('T')[0];
-        document.getElementById('fecha').min = today;
-
-        // Cargar datos iniciales
-        window.addEventListener('DOMContentLoaded', async () => {
-            await Promise.all([
-                loadUserData(),
-                loadUserReservas(),
-                loadSalasDisponibles()
-            ]);
-            
-            // Programar actualizaciones periódicas (cada 30 segundos)
-            setInterval(() => {
-                if (document.getElementById('mis-reservas').classList.contains('active')) {
-                    loadUserReservas();
-                }
-                if (document.getElementById('salas-disponibles').classList.contains('active')) {
-                    loadSalasDisponibles();
-                }
-            }, 30000);
-        });
-
-        // Manejar token expirado
-        async function refreshToken() {
-            try {
-                const refresh = localStorage.getItem('refresh_token');
-                const response = await fetch('/api/auth/refresh/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ refresh })
-                });
-                
-                if (!response.ok) throw new Error('Token refresh failed');
-                
-                const data = await response.json();
-                localStorage.setItem('access_token', data.access);
-                token = data.access;
-                
-            } catch (error) {
-                // Si el refresh también falla, redirigir al login
-                localStorage.removeItem('access_token');
-                localStorage.removeItem('refresh_token');
-                localStorage.removeItem('user');
-                window.location.href = '/login/';
-            }
-        }
-
-        // Interceptor para manejar token expirado
-        const originalFetch = window.fetch;
-        window.fetch = async function(...args) {
-            let response = await originalFetch.apply(this, args);
-            
-            if (response.status === 401) {
-                await refreshToken();
-                args[1] = args[1] || {};
-                args[1].headers = {
-                    ...args[1].headers,
-                    'Authorization': `Bearer ${token}`
-                };
-                response = await originalFetch.apply(this, args);
-            }
-            
-            return response;
-        };
     </script>
 </body>
 </html>

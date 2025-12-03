@@ -10,6 +10,7 @@ urlpatterns = [
     path('logout/', views.logout_view, name='logout'),  
     path('set-session/', views.set_session_view, name='set_session'), 
     path('cliente-dashboard/', views.cliente_dashboard_view, name='cliente_dashboard'),
+    path('auth-error/', views.auth_error_view, name='auth_error'),
     path('admin-dashboard/', views.admin_dashboard_view, name='admin_dashboard'),
     path('admin/', admin.site.urls),
     path('api/', include('reservas.urls')),

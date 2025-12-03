@@ -13,7 +13,7 @@ Usuario = get_user_model()
 
 
 # ============================
-# 🔹 LOGOUT VIEW AGREGADO
+# 🔹 LOGOUT VIEW
 # ============================
 def logout_view(request):
     """Vista para cerrar sesión"""
@@ -40,108 +40,131 @@ def home_view(request):
 
 
 # ============================
-# 🔹 LOGIN VIEW
+# 🔹 LOGIN VIEW - CORREGIDA
 # ============================
 def login_view(request):
-    """Vista de login y registro"""
-    # Si el usuario ya está autenticado, redirigir según su rol
+    """Vista de login y registro - Versión corregida"""
+    # Si ya está autenticado, redirigir según su rol
     if request.user.is_authenticated:
         if hasattr(request.user, 'es_admin') and request.user.es_admin:
             return redirect('admin_dashboard')
         else:
             return redirect('cliente_dashboard')
     
-    # Manejar login tradicional o JSON
-    if request.method == 'POST':
-        if request.content_type == 'application/json':
-            try:
-                data = json.loads(request.body)
-                email = data.get('email')
-                password = data.get('password')
-            except:
-                return JsonResponse({'error': 'Datos inválidos'}, status=400)
-        else:
-            email = request.POST.get('email')
-            password = request.POST.get('password')
-        
-        if email and password:
+    # Manejar login desde React (JSON)
+    if request.method == 'POST' and request.content_type == 'application/json':
+        try:
+            data = json.loads(request.body)
+            email = data.get('email', '').strip()
+            password = data.get('password', '')
+            
+            if not email or not password:
+                return JsonResponse({
+                    'error': 'Email y contraseña son requeridos'
+                }, status=400)
+            
+            # Autenticar usuario
             user = authenticate(request, username=email, password=password)
             
             if user is not None:
                 login(request, user)
-
-                # Si es una solicitud JSON (React u otra API)
-                if request.content_type == 'application/json':
-                    return JsonResponse({
-                        'success': True,
-                        'redirect': 'admin_dashboard' if user.es_admin else 'cliente_dashboard'
-                    })
-
-                # Si es formulario normal
-                if user.es_admin:
-                    return redirect('admin_dashboard')
-                else:
-                    return redirect('cliente_dashboard')
-
-            else:
-                if request.content_type == 'application/json':
-                    return JsonResponse({'error': 'Credenciales incorrectas'}, status=401)
-
-                return render(request, 'admin/login.html', {
-                    'error': 'Credenciales incorrectas'
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Login exitoso',
+                    'redirect': 'admin_dashboard' if (user.is_staff or user.is_superuser or (hasattr(user, 'es_admin') and user.es_admin)) else 'cliente_dashboard'
                 })
+            else:
+                return JsonResponse({
+                    'error': 'Credenciales incorrectas'
+                }, status=401)
+                
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Datos inválidos'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
     
+    # Si es GET, mostrar la página de login
     return render(request, 'admin/login.html')
 
 
 # ============================
-# 🔹 JWT SESSION LOGIN VIEW
+# 🔹 JWT SESSION LOGIN VIEW - CORREGIDA
 # ============================
 @csrf_exempt
 def set_session_view(request):
-    """Vista para establecer sesión a partir de token JWT"""
+    """Vista para establecer sesión a partir de token JWT - Corregida"""
     if request.method == 'POST':
-        auth_header = request.headers.get('Authorization', '')
-        
-        if auth_header.startswith('Bearer '):
+        try:
+            auth_header = request.headers.get('Authorization', '')
+            
+            if not auth_header.startswith('Bearer '):
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Token no proporcionado o formato inválido'
+                }, status=401)
+            
             token = auth_header.split(' ')[1]
             
             try:
+                # Decodificar token JWT
                 payload = jwt.decode(
                     token, 
                     settings.SECRET_KEY, 
-                    algorithms=['HS256']
+                    algorithms=['HS256'],
+                    options={'verify_exp': True}
                 )
                 
                 user_id = payload.get('user_id')
-                if user_id:
-                    user = Usuario.objects.get(id=user_id)
-
-                    login(request, user)
-
+                if not user_id:
                     return JsonResponse({
-                        'success': True,
-                        'message': 'Sesión establecida',
-                        'user': {
-                            'id': user.id,
-                            'email': user.email,
-                            'nombre_completo': user.get_full_name(),
-                            'es_admin': user.es_admin
-                        }
-                    })
+                        'success': False,
+                        'error': 'Token inválido: no contiene user_id'
+                    }, status=401)
+                
+                # Buscar usuario
+                try:
+                    user = Usuario.objects.get(id=user_id)
+                except Usuario.DoesNotExist:
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Usuario no encontrado'
+                    }, status=404)
+                
+                # Iniciar sesión en Django
+                login(request, user)
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Sesión establecida correctamente',
+                    'user': {
+                        'id': user.id,
+                        'email': user.email,
+                        'nombre_completo': user.get_full_name(),
+                        'es_admin': user.es_admin if hasattr(user, 'es_admin') else user.is_staff
+                    }
+                })
                     
             except jwt.ExpiredSignatureError:
-                return JsonResponse({'success': False, 'error': 'Token expirado'}, status=401)
-            except jwt.InvalidTokenError:
-                return JsonResponse({'success': False, 'error': 'Token inválido'}, status=401)
-            except Usuario.DoesNotExist:
-                return JsonResponse({'success': False, 'error': 'Usuario no encontrado'}, status=404)
-            except Exception as e:
-                return JsonResponse({'success': False, 'error': str(e)}, status=500)
+                return JsonResponse({
+                    'success': False, 
+                    'error': 'Token expirado'
+                }, status=401)
+            except jwt.InvalidTokenError as e:
+                return JsonResponse({
+                    'success': False, 
+                    'error': f'Token inválido: {str(e)}'
+                }, status=401)
+                
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'error': f'Error interno: {str(e)}'
+            }, status=500)
     
     return JsonResponse({
         'success': False,
-        'error': 'Método no permitido o token no proporcionado'
+        'error': 'Método no permitido'
     }, status=405)
 
 
@@ -160,18 +183,50 @@ def es_usuario_regular(user):
 
 
 # ============================
-# 🔹 DASHBOARD CLIENTE
+# 🔹 DASHBOARD CLIENTE - PERMANENTE
 # ============================
 @login_required(login_url='/login/')
-@user_passes_test(es_usuario_regular, login_url='/login/')
 def cliente_dashboard_view(request):
-    return render(request, 'cliente/dashboard.html')
+    """Vista permanente para dashboard del cliente"""
+    # Verificar si el usuario tiene sesión activa
+    if not request.user.is_authenticated:
+        return redirect('login')
+    
+    # Verificar si el usuario tiene rol de usuario regular
+    # Si es admin, redirigir al admin dashboard
+    if hasattr(request.user, 'es_admin') and request.user.es_admin:
+        return redirect('admin_dashboard')
+    
+    # Pasar datos del usuario al template
+    context = {
+        'user': request.user,
+        'is_authenticated': True,
+    }
+    
+    return render(request, 'cliente/dashboard.html', context)
 
 
 # ============================
-# 🔹 DASHBOARD ADMIN
+# 🔹 DASHBOARD ADMIN - PERMANENTE
 # ============================
 @login_required(login_url='/login/')
-@user_passes_test(es_admin, login_url='/login/')
+@user_passes_test(lambda u: u.is_staff or u.is_superuser or (hasattr(u, 'es_admin') and u.es_admin))
 def admin_dashboard_view(request):
-    return render(request, 'admin/dashboard.html')
+    """Vista permanente para dashboard del administrador"""
+    # Pasar datos del usuario al template
+    context = {
+        'user': request.user,
+        'is_authenticated': True,
+        'is_admin': True,
+    }
+    
+    return render(request, 'admin/dashboard.html', context)
+
+
+# ============================
+# 🔹 VISTA PARA ERRORES DE AUTENTICACIÓN
+# ============================
+def auth_error_view(request):
+    """Vista para mostrar errores de autenticación"""
+    error_message = request.GET.get('message', 'Error de autenticación')
+    return render(request, 'auth_error.html', {'error_message': error_message})

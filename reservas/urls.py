@@ -6,7 +6,8 @@ from .views import (
     RegistroViewSet,
     UsuarioViewSet,
     SalaViewSet,
-    ReservaViewSet
+    ReservaViewSet,
+    CheckAuthView  # Ahora sí está definido
 )
 
 router = DefaultRouter()
@@ -19,6 +20,7 @@ urlpatterns = [
     path('auth/login/', CustomTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('auth/registro/', RegistroViewSet.as_view({'post': 'create'}), name='registro'),
+    path('auth/check/', CheckAuthView.as_view(), name='check_auth'),  # Descomentado
     
     # API REST
     path('', include(router.urls)),
