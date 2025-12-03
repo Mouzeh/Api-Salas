@@ -59,17 +59,37 @@
 
               const data = await response.json();
               
+              // Guardar tokens en localStorage
               localStorage.setItem('access_token', data.access);
               localStorage.setItem('refresh_token', data.refresh);
               localStorage.setItem('user', JSON.stringify(data.user));
 
               setSuccess('¡Inicio de sesión exitoso! Redirigiendo...');
               
+              // Redirigir según el rol del usuario
               setTimeout(() => {
                 if (data.user.es_admin) {
-                  window.location.href = '/admin-dashboard/';
+                  // Para admin, hacer una solicitud al servidor para establecer la sesión
+                  fetch('/set-session/', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${data.access}`
+                    }
+                  }).then(() => {
+                    window.location.href = '/admin-dashboard/';
+                  });
                 } else {
-                  window.location.href = '/cliente-dashboard/';
+                  // Para usuario regular
+                  fetch('/set-session/', {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${data.access}`
+                    }
+                  }).then(() => {
+                    window.location.href = '/cliente-dashboard/';
+                  });
                 }
               }, 1500);
 

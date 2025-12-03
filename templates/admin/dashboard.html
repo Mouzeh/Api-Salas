@@ -1,0 +1,1646 @@
+<!-- Archivo: templates/admin/dashboard.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Administrador - Sistema de Reservas</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/cliente.css' %}">
+    <link rel="stylesheet" href="{% static 'css/admin.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container admin-dashboard">
+        <!-- Header -->
+        <header class="app-header">
+            <h1><i class="fas fa-user-shield"></i> Dashboard Administrador</h1>
+            <p class="subtitle">Gestión completa del sistema de reservas</p>
+        </header>
+
+        <!-- Tabs de Navegación -->
+        <div class="tabs-container">
+            <div class="tabs">
+                <button class="tab active" data-tab="resumen">
+                    <i class="fas fa-chart-line"></i> Resumen
+                </button>
+                <button class="tab" data-tab="reservas">
+                    <i class="fas fa-calendar-check"></i> Todas las Reservas
+                </button>
+                <button class="tab" data-tab="salas">
+                    <i class="fas fa-door-open"></i> Gestión de Salas
+                </button>
+                <button class="tab" data-tab="usuarios">
+                    <i class="fas fa-users"></i> Gestión de Usuarios
+                </button>
+                <button class="tab" data-tab="reportes">
+                    <i class="fas fa-file-chart-line"></i> Reportes
+                </button>
+                <div style="flex: 1"></div>
+                <button class="btn btn-secondary" id="admin-logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                </button>
+            </div>
+        </div>
+
+        <!-- Contenido Principal -->
+        <main class="main-content">
+            <!-- Mensajes -->
+            <div id="admin-alert-container"></div>
+
+            <!-- Tab: Resumen -->
+            <div id="resumen" class="tab-content active">
+                <h2 class="section-title">
+                    <i class="fas fa-chart-line"></i> Resumen del Sistema
+                </h2>
+                
+                <!-- Estadísticas principales -->
+                <div class="stats-grid-admin">
+                    <div class="stat-card-admin">
+                        <div class="stat-icon-admin total-reservas">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <div class="stat-content-admin">
+                            <h4>Total Reservas</h4>
+                            <p class="stat-number-admin" id="total-reservas">0</p>
+                            <p class="stat-change" id="reservas-change">Cargando...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card-admin">
+                        <div class="stat-icon-admin usuarios-activos">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-content-admin">
+                            <h4>Usuarios Activos</h4>
+                            <p class="stat-number-admin" id="total-usuarios">0</p>
+                            <p class="stat-change" id="usuarios-change">Cargando...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card-admin">
+                        <div class="stat-icon-admin salas-disponibles">
+                            <i class="fas fa-door-open"></i>
+                        </div>
+                        <div class="stat-content-admin">
+                            <h4>Salas Disponibles</h4>
+                            <p class="stat-number-admin" id="salas-disponibles">0</p>
+                            <p class="stat-change" id="salas-change">Cargando...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card-admin">
+                        <div class="stat-icon-admin ocupacion">
+                            <i class="fas fa-chart-pie"></i>
+                        </div>
+                        <div class="stat-content-admin">
+                            <h4>Ocupación Hoy</h4>
+                            <p class="stat-number-admin" id="ocupacion-hoy">0%</p>
+                            <p class="stat-change" id="ocupacion-change">Cargando...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gráficos -->
+                <div class="charts-container">
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3><i class="fas fa-chart-bar"></i> Reservas por Estado</h3>
+                            <select id="chart-estado-periodo" class="form-control-sm">
+                                <option value="hoy">Hoy</option>
+                                <option value="semana">Esta Semana</option>
+                                <option value="mes" selected>Este Mes</option>
+                                <option value="anio">Este Año</option>
+                            </select>
+                        </div>
+                        <div class="chart-body">
+                            <canvas id="reservasEstadoChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h3><i class="fas fa-chart-pie"></i> Reservas por Sala</h3>
+                            <select id="chart-sala-periodo" class="form-control-sm">
+                                <option value="hoy">Hoy</option>
+                                <option value="semana">Esta Semana</option>
+                                <option value="mes" selected>Este Mes</option>
+                                <option value="anio">Este Año</option>
+                            </select>
+                        </div>
+                        <div class="chart-body">
+                            <canvas id="reservasSalaChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reservas recientes -->
+                <div class="recent-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-history"></i> Reservas Recientes</h3>
+                        <button class="btn btn-sm btn-secondary" onclick="cargarReservasRecientes()">
+                            <i class="fas fa-sync-alt"></i> Actualizar
+                        </button>
+                    </div>
+                    <div id="recent-reservas" class="recent-list">
+                        <!-- Se llenará dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Alertas del sistema -->
+                <div class="alerts-section">
+                    <div class="section-header">
+                        <h3><i class="fas fa-bell"></i> Alertas del Sistema</h3>
+                        <span class="badge danger" id="alert-count">0</span>
+                    </div>
+                    <div id="system-alerts" class="alerts-list">
+                        <!-- Se llenará dinámicamente -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Todas las Reservas -->
+            <div id="reservas" class="tab-content">
+                <h2 class="section-title">
+                    <i class="fas fa-calendar-check"></i> Gestión de Reservas
+                </h2>
+                
+                <!-- Filtros avanzados -->
+                <div class="advanced-filters">
+                    <div class="filter-row">
+                        <div class="filter-group">
+                            <label><i class="fas fa-filter"></i> Estado</label>
+                            <select id="filter-reserva-estado" class="form-control" multiple style="height: 100px;">
+                                <option value="pendiente" selected>Pendiente</option>
+                                <option value="confirmada" selected>Confirmada</option>
+                                <option value="cancelada">Cancelada</option>
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label><i class="fas fa-calendar"></i> Rango de Fechas</label>
+                            <div class="date-range">
+                                <input type="date" id="filter-fecha-desde" class="form-control">
+                                <span>a</span>
+                                <input type="date" id="filter-fecha-hasta" class="form-control">
+                            </div>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label><i class="fas fa-door-open"></i> Sala</label>
+                            <select id="filter-reserva-sala" class="form-control">
+                                <option value="">Todas las salas</option>
+                                <!-- Se llenará dinámicamente -->
+                            </select>
+                        </div>
+                        
+                        <div class="filter-group">
+                            <label><i class="fas fa-user"></i> Usuario</label>
+                            <input type="text" id="filter-reserva-usuario" class="form-control" 
+                                   placeholder="Buscar usuario...">
+                        </div>
+                    </div>
+                    
+                    <div class="filter-actions">
+                        <button id="apply-filters" class="btn btn-primary">
+                            <i class="fas fa-check"></i> Aplicar Filtros
+                        </button>
+                        <button id="clear-filters" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Limpiar
+                        </button>
+                        <button id="export-reservas" class="btn btn-success">
+                            <i class="fas fa-download"></i> Exportar CSV
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tabla de reservas -->
+                <div class="table-container">
+                    <div class="table-header">
+                        <div class="table-info">
+                            Mostrando <span id="reservas-count">0</span> reservas
+                        </div>
+                        <div class="table-actions">
+                            <button class="btn btn-sm btn-primary" onclick="abrirModalReserva()">
+                                <i class="fas fa-plus"></i> Nueva Reserva
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Sala</th>
+                                    <th>Usuario</th>
+                                    <th>Fecha</th>
+                                    <th>Horario</th>
+                                    <th>Estado</th>
+                                    <th>Motivo</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reservas-table-body">
+                                <!-- Se llenará dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="table-footer">
+                        <div class="pagination">
+                            <button id="prev-page" class="btn btn-sm btn-secondary" disabled>
+                                <i class="fas fa-chevron-left"></i> Anterior
+                            </button>
+                            <span id="page-info">Página 1 de 1</span>
+                            <button id="next-page" class="btn btn-sm btn-secondary" disabled>
+                                Siguiente <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        <select id="page-size" class="form-control-sm">
+                            <option value="10">10 por página</option>
+                            <option value="25" selected>25 por página</option>
+                            <option value="50">50 por página</option>
+                            <option value="100">100 por página</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Gestión de Salas -->
+            <div id="salas" class="tab-content">
+                <h2 class="section-title">
+                    <i class="fas fa-door-open"></i> Gestión de Salas
+                </h2>
+                
+                <!-- Controles de salas -->
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="abrirModalSala()">
+                        <i class="fas fa-plus"></i> Nueva Sala
+                    </button>
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="search-salas-admin" placeholder="Buscar salas..." 
+                               class="form-control" style="width: 300px;">
+                    </div>
+                </div>
+
+                <!-- Tabla de salas -->
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Capacidad</th>
+                                <th>Ubicación</th>
+                                <th>Equipamiento</th>
+                                <th>Estado</th>
+                                <th>Reservas Activas</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="salas-table-body">
+                            <!-- Se llenará dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Estadísticas de uso de salas -->
+                <div class="usage-stats">
+                    <h3><i class="fas fa-chart-bar"></i> Estadísticas de Uso</h3>
+                    <div id="sala-usage-chart" class="chart-placeholder">
+                        <canvas id="salaUsageChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Gestión de Usuarios -->
+            <div id="usuarios" class="tab-content">
+                <h2 class="section-title">
+                    <i class="fas fa-users"></i> Gestión de Usuarios
+                </h2>
+                
+                <!-- Controles de usuarios -->
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="abrirModalUsuario()">
+                        <i class="fas fa-user-plus"></i> Nuevo Usuario
+                    </button>
+                    <div class="filter-group">
+                        <select id="filter-usuario-rol" class="form-control">
+                            <option value="">Todos los roles</option>
+                            <option value="usuario">Usuarios</option>
+                            <option value="admin">Administradores</option>
+                        </select>
+                    </div>
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="search-usuarios" placeholder="Buscar usuarios..." 
+                               class="form-control" style="width: 300px;">
+                    </div>
+                </div>
+
+                <!-- Tabla de usuarios -->
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre</th>
+                                <th>Email</th>
+                                <th>Teléfono</th>
+                                <th>Carrera</th>
+                                <th>Rol</th>
+                                <th>Registro</th>
+                                <th>Reservas</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usuarios-table-body">
+                            <!-- Se llenará dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Estadísticas de usuarios -->
+                <div class="user-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-user-clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h4>Usuarios Nuevos (7 días)</h4>
+                            <p class="stat-number" id="nuevos-usuarios">0</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h4>Reservas por Usuario (Prom.)</h4>
+                            <p class="stat-number" id="avg-reservas-usuario">0</p>
+                        </div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h4>Crecimiento Usuarios</h4>
+                            <p class="stat-number" id="crecimiento-usuarios">0%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Reportes -->
+            <div id="reportes" class="tab-content">
+                <h2 class="section-title">
+                    <i class="fas fa-file-chart-line"></i> Reportes y Análisis
+                </h2>
+                
+                <!-- Generador de reportes -->
+                <div class="report-generator">
+                    <div class="report-form">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Tipo de Reporte</label>
+                                <select id="report-type" class="form-control">
+                                    <option value="uso-salas">Uso de Salas</option>
+                                    <option value="reservas-usuario">Reservas por Usuario</option>
+                                    <option value="ocupacion-horaria">Ocupación Horaria</option>
+                                    <option value="estadisticas-generales">Estadísticas Generales</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Período</label>
+                                <select id="report-period" class="form-control">
+                                    <option value="hoy">Hoy</option>
+                                    <option value="semana">Esta semana</option>
+                                    <option value="mes" selected>Este mes</option>
+                                    <option value="trimestre">Este trimestre</option>
+                                    <option value="anio">Este año</option>
+                                    <option value="personalizado">Personalizado</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group" id="custom-dates" style="display: none;">
+                                <label>Fechas Personalizadas</label>
+                                <div class="date-range">
+                                    <input type="date" id="report-fecha-desde" class="form-control">
+                                    <span>a</span>
+                                    <input type="date" id="report-fecha-hasta" class="form-control">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Formato</label>
+                                <select id="report-format" class="form-control">
+                                    <option value="html">HTML (Web)</option>
+                                    <option value="pdf">PDF</option>
+                                    <option value="csv">CSV</option>
+                                    <option value="excel">Excel</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label>Detalle</label>
+                                <select id="report-detail" class="form-control">
+                                    <option value="resumen">Resumen</option>
+                                    <option value="detallado">Detallado</option>
+                                    <option value="completo">Completo</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button id="generate-report" class="btn btn-primary">
+                                <i class="fas fa-cogs"></i> Generar Reporte
+                            </button>
+                            <button id="preview-report" class="btn btn-secondary">
+                                <i class="fas fa-eye"></i> Vista Previa
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vista previa del reporte -->
+                <div class="report-preview" id="report-preview">
+                    <div class="preview-header">
+                        <h3><i class="fas fa-chart-bar"></i> Vista Previa del Reporte</h3>
+                        <button id="download-report" class="btn btn-sm btn-success" disabled>
+                            <i class="fas fa-download"></i> Descargar
+                        </button>
+                    </div>
+                    <div class="preview-content" id="preview-content">
+                        <p class="empty-preview">Selecciona opciones y genera un reporte para ver la vista previa.</p>
+                    </div>
+                </div>
+
+                <!-- Reportes guardados -->
+                <div class="saved-reports">
+                    <h3><i class="fas fa-save"></i> Reportes Guardados</h3>
+                    <div id="saved-reports-list" class="reports-list">
+                        <!-- Se llenará dinámicamente -->
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>Sistema de Reservas de Salas - Panel de Administración © 2024</p>
+            <p>Última actualización: <span id="last-update">Cargando...</span></p>
+        </footer>
+    </div>
+
+    <!-- Modales -->
+    <div id="modal-reserva" class="modal-overlay">
+        <div class="modal modal-lg">
+            <div class="modal-header">
+                <h2><i class="fas fa-calendar-plus"></i> Nueva Reserva</h2>
+                <button class="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Formulario de reserva (similar al del cliente) -->
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-sala" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-door-open"></i> Gestión de Sala</h2>
+                <button class="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Formulario de sala -->
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-usuario" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-user-edit"></i> Gestión de Usuario</h2>
+                <button class="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Formulario de usuario -->
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-detalles" class="modal-overlay">
+        <div class="modal">
+            <div class="modal-header">
+                <h2><i class="fas fa-info-circle"></i> Detalles</h2>
+                <button class="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modal-detalles-body">
+                <!-- Contenido dinámico -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // Variables globales
+        let adminToken = localStorage.getItem('access_token');
+        let currentPage = 1;
+        let pageSize = 25;
+        let reservasData = [];
+        let salasData = [];
+        let usuariosData = [];
+        let charts = {};
+
+        // Verificar autenticación y permisos
+        async function checkAdminAuth() {
+            if (!adminToken) {
+                window.location.href = '/login/';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/usuarios/me/', {
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+                
+                if (!response.ok) throw new Error('No autorizado');
+                
+                const user = await response.json();
+                if (!user.es_admin) {
+                    window.location.href = '/cliente-dashboard/';
+                }
+                
+            } catch (error) {
+                window.location.href = '/login/';
+            }
+        }
+
+        // Navegación entre tabs
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Actualizar tabs activos
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Mostrar contenido correspondiente
+                const tabId = this.getAttribute('data-tab');
+                document.querySelectorAll('.tab-content').forEach(content => {
+                    content.classList.remove('active');
+                });
+                document.getElementById(tabId).classList.add('active');
+                
+                // Cargar datos específicos de la pestaña
+                switch(tabId) {
+                    case 'resumen':
+                        cargarResumen();
+                        break;
+                    case 'reservas':
+                        cargarReservas();
+                        break;
+                    case 'salas':
+                        cargarSalas();
+                        break;
+                    case 'usuarios':
+                        cargarUsuarios();
+                        break;
+                    case 'reportes':
+                        cargarReportesGuardados();
+                        break;
+                }
+            });
+        });
+
+        // Cerrar sesión
+        document.getElementById('admin-logout-btn').addEventListener('click', function() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('user');
+            window.location.href = '/login/';
+        });
+
+        // Cargar datos del resumen
+        async function cargarResumen() {
+            try {
+                // Cargar estadísticas
+                const [reservasRes, usuariosRes, salasRes] = await Promise.all([
+                    fetch('/api/reservas/', {
+                        headers: { 'Authorization': `Bearer ${adminToken}` }
+                    }),
+                    fetch('/api/usuarios/', {
+                        headers: { 'Authorization': `Bearer ${adminToken}` }
+                    }),
+                    fetch('/api/salas/', {
+                        headers: { 'Authorization': `Bearer ${adminToken}` }
+                    })
+                ]);
+
+                if (!reservasRes.ok || !usuariosRes.ok || !salasRes.ok) {
+                    throw new Error('Error al cargar estadísticas');
+                }
+
+                const reservas = await reservasRes.json();
+                const usuarios = await usuariosRes.json();
+                const salas = await salasRes.json();
+
+                // Actualizar estadísticas
+                document.getElementById('total-reservas').textContent = reservas.length || 0;
+                document.getElementById('total-usuarios').textContent = usuarios.length || 0;
+                
+                const salasDisponibles = salas.filter(s => s.estado === 'disponible').length;
+                document.getElementById('salas-disponibles').textContent = salasDisponibles;
+                
+                // Calcular ocupación hoy
+                const hoy = new Date().toISOString().split('T')[0];
+                const reservasHoy = reservas.filter(r => r.fecha === hoy && r.estado === 'confirmada');
+                const totalHorasDisponibles = salasDisponibles * 14; // 14 horas de 8:00 a 22:00
+                const horasReservadas = reservasHoy.reduce((total, r) => {
+                    const inicio = parseInt(r.hora_inicio.split(':')[0]);
+                    const fin = parseInt(r.hora_fin.split(':')[0]);
+                    return total + (fin - inicio);
+                }, 0);
+                
+                const ocupacion = totalHorasDisponibles > 0 ? 
+                    Math.round((horasReservadas / totalHorasDisponibles) * 100) : 0;
+                document.getElementById('ocupacion-hoy').textContent = `${ocupacion}%`;
+
+                // Cargar reservas recientes
+                cargarReservasRecientes();
+
+                // Cargar alertas
+                cargarAlertasSistema();
+
+                // Crear gráficos
+                crearGraficos(reservas, salas);
+
+            } catch (error) {
+                mostrarAlerta('Error al cargar resumen: ' + error.message, 'error');
+            }
+        }
+
+        // Cargar reservas recientes
+        async function cargarReservasRecientes() {
+            try {
+                const response = await fetch('/api/reservas/?ordering=-fecha,-hora_inicio&limit=5', {
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                
+                if (!response.ok) throw new Error('Error al cargar reservas recientes');
+                
+                const reservas = await response.json();
+                mostrarReservasRecientes(reservas);
+                
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Mostrar reservas recientes
+        function mostrarReservasRecientes(reservas) {
+            const container = document.getElementById('recent-reservas');
+            
+            if (!reservas || reservas.length === 0) {
+                container.innerHTML = '<p class="empty-message">No hay reservas recientes</p>';
+                return;
+            }
+            
+            container.innerHTML = reservas.map(reserva => `
+                <div class="recent-item">
+                    <div class="recent-info">
+                        <strong>${reserva.sala_nombre}</strong>
+                        <span class="badge ${reserva.estado}">${reserva.estado}</span>
+                    </div>
+                    <div class="recent-details">
+                        <span>${reserva.usuario_nombre}</span>
+                        <span>${reserva.fecha} ${reserva.hora_inicio}</span>
+                    </div>
+                    <button class="btn btn-sm btn-secondary" onclick="verDetalles('reserva', ${reserva.id})">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Cargar alertas del sistema
+        async function cargarAlertasSistema() {
+            try {
+                // Obtener reservas pendientes
+                const pendientesRes = await fetch('/api/reservas/pendientes/', {
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                
+                // Obtener salas en mantenimiento
+                const salasRes = await fetch('/api/salas/', {
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                
+                if (!pendientesRes.ok || !salasRes.ok) {
+                    throw new Error('Error al cargar alertas');
+                }
+                
+                const pendientes = await pendientesRes.json();
+                const salas = await salasRes.json();
+                
+                const salasMantenimiento = salas.filter(s => s.estado === 'mantenimiento');
+                
+                mostrarAlertasSistema(pendientes, salasMantenimiento);
+                
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Mostrar alertas del sistema
+        function mostrarAlertasSistema(pendientes, salasMantenimiento) {
+            const container = document.getElementById('system-alerts');
+            const alertCount = document.getElementById('alert-count');
+            
+            let alertas = [];
+            
+            // Alertas de reservas pendientes
+            if (pendientes && pendientes.length > 0) {
+                alertas.push({
+                    tipo: 'warning',
+                    mensaje: `${pendientes.length} reservas pendientes de confirmación`,
+                    icono: 'fa-clock'
+                });
+            }
+            
+            // Alertas de salas en mantenimiento
+            if (salasMantenimiento && salasMantenimiento.length > 0) {
+                alertas.push({
+                    tipo: 'danger',
+                    mensaje: `${salasMantenimiento.length} salas en mantenimiento`,
+                    icono: 'fa-tools'
+                });
+            }
+            
+            // Verificar si hay conflictos de horario (esto sería más complejo en producción)
+            
+            if (alertas.length === 0) {
+                alertas.push({
+                    tipo: 'success',
+                    mensaje: 'Sistema funcionando normalmente',
+                    icono: 'fa-check-circle'
+                });
+            }
+            
+            alertCount.textContent = alertas.filter(a => a.tipo !== 'success').length;
+            
+            container.innerHTML = alertas.map(alerta => `
+                <div class="alert-item ${alerta.tipo}">
+                    <i class="fas ${alerta.icono}"></i>
+                    <span>${alerta.mensaje}</span>
+                </div>
+            `).join('');
+        }
+
+        // Crear gráficos
+        function crearGraficos(reservas, salas) {
+            // Gráfico de reservas por estado
+            const estadoCtx = document.getElementById('reservasEstadoChart').getContext('2d');
+            
+            if (charts.reservasEstado) {
+                charts.reservasEstado.destroy();
+            }
+            
+            const estados = ['pendiente', 'confirmada', 'cancelada'];
+            const datosEstados = estados.map(estado => 
+                reservas.filter(r => r.estado === estado).length
+            );
+            
+            charts.reservasEstado = new Chart(estadoCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Pendientes', 'Confirmadas', 'Canceladas'],
+                    datasets: [{
+                        data: datosEstados,
+                        backgroundColor: [
+                            'rgba(255, 206, 86, 0.8)',
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(255, 99, 132, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(255, 99, 132, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: '#fff'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Gráfico de reservas por sala
+            const salaCtx = document.getElementById('reservasSalaChart').getContext('2d');
+            
+            if (charts.reservasSala) {
+                charts.reservasSala.destroy();
+            }
+            
+            // Agrupar reservas por sala
+            const reservasPorSala = {};
+            reservas.forEach(reserva => {
+                if (reserva.sala_nombre) {
+                    reservasPorSala[reserva.sala_nombre] = 
+                        (reservasPorSala[reserva.sala_nombre] || 0) + 1;
+                }
+            });
+            
+            const nombresSalas = Object.keys(reservasPorSala);
+            const datosSalas = Object.values(reservasPorSala);
+            
+            charts.reservasSala = new Chart(salaCtx, {
+                type: 'bar',
+                data: {
+                    labels: nombresSalas,
+                    datasets: [{
+                        label: 'Reservas',
+                        data: datosSalas,
+                        backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                color: '#fff'
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#fff',
+                                maxRotation: 45
+                            },
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#fff'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Cargar todas las reservas
+        async function cargarReservas() {
+            try {
+                const url = `/api/reservas/?page=${currentPage}&page_size=${pageSize}`;
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                
+                if (!response.ok) throw new Error('Error al cargar reservas');
+                
+                const data = await response.json();
+                reservasData = data.results || data;
+                
+                // Actualizar tabla
+                actualizarTablaReservas(reservasData);
+                
+                // Actualizar paginación
+                actualizarPaginacion(data.count || reservasData.length);
+                
+                // Cargar opciones de filtro
+                cargarFiltrosReservas();
+                
+            } catch (error) {
+                mostrarAlerta('Error al cargar reservas: ' + error.message, 'error');
+            }
+        }
+
+        // Actualizar tabla de reservas
+        function actualizarTablaReservas(reservas) {
+            const tbody = document.getElementById('reservas-table-body');
+            const countElement = document.getElementById('reservas-count');
+            
+            countElement.textContent = reservas.length;
+            
+            if (reservas.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center">
+                            <i class="fas fa-calendar-alt" style="font-size: 2rem; opacity: 0.5;"></i>
+                            <p>No hay reservas para mostrar</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = reservas.map(reserva => `
+                <tr>
+                    <td>${reserva.id}</td>
+                    <td>${reserva.sala_nombre || 'N/A'}</td>
+                    <td>${reserva.usuario_nombre || 'N/A'}</td>
+                    <td>${reserva.fecha}</td>
+                    <td>${reserva.hora_inicio} - ${reserva.hora_fin}</td>
+                    <td>
+                        <span class="badge ${reserva.estado}">${reserva.estado}</span>
+                    </td>
+                    <td class="truncate" title="${reserva.motivo_uso || ''}">
+                        ${(reserva.motivo_uso || '').substring(0, 30)}${(reserva.motivo_uso || '').length > 30 ? '...' : ''}
+                    </td>
+                    <td class="actions">
+                        <button class="btn btn-sm btn-info" onclick="verDetalles('reserva', ${reserva.id})">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        ${reserva.estado === 'pendiente' ? `
+                            <button class="btn btn-sm btn-success" onclick="confirmarReserva(${reserva.id})">
+                                <i class="fas fa-check"></i>
+                            </button>
+                        ` : ''}
+                        <button class="btn btn-sm btn-danger" onclick="eliminarReserva(${reserva.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Cargar todas las salas
+        async function cargarSalas() {
+            try {
+                const response = await fetch('/api/salas/', {
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                
+                if (!response.ok) throw new Error('Error al cargar salas');
+                
+                salasData = await response.json();
+                actualizarTablaSalas(salasData);
+                
+                // Crear gráfico de uso
+                crearGraficoUsoSalas(salasData);
+                
+            } catch (error) {
+                mostrarAlerta('Error al cargar salas: ' + error.message, 'error');
+            }
+        }
+
+        // Actualizar tabla de salas
+        function actualizarTablaSalas(salas) {
+            const tbody = document.getElementById('salas-table-body');
+            
+            if (salas.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center">
+                            <i class="fas fa-door-closed" style="font-size: 2rem; opacity: 0.5;"></i>
+                            <p>No hay salas registradas</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = salas.map(sala => `
+                <tr>
+                    <td>${sala.id}</td>
+                    <td>${sala.nombre}</td>
+                    <td>${sala.capacidad}</td>
+                    <td>${sala.ubicacion}</td>
+                    <td class="truncate" title="${sala.equipamiento || ''}">
+                        ${(sala.equipamiento || '').substring(0, 30)}${(sala.equipamiento || '').length > 30 ? '...' : ''}
+                    </td>
+                    <td>
+                        <span class="badge ${sala.estado}">${sala.estado}</span>
+                    </td>
+                    <td>${sala.total_reservas || 0}</td>
+                    <td class="actions">
+                        <button class="btn btn-sm btn-info" onclick="verDetalles('sala', ${sala.id})">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-warning" onclick="editarSala(${sala.id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="eliminarSala(${sala.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Cargar todos los usuarios
+        async function cargarUsuarios() {
+            try {
+                const response = await fetch('/api/usuarios/', {
+                    headers: { 'Authorization': `Bearer ${adminToken}` }
+                });
+                
+                if (!response.ok) throw new Error('Error al cargar usuarios');
+                
+                usuariosData = await response.json();
+                actualizarTablaUsuarios(usuariosData);
+                
+                // Calcular estadísticas
+                calcularEstadisticasUsuarios(usuariosData);
+                
+            } catch (error) {
+                mostrarAlerta('Error al cargar usuarios: ' + error.message, 'error');
+            }
+        }
+
+        // Actualizar tabla de usuarios
+        function actualizarTablaUsuarios(usuarios) {
+            const tbody = document.getElementById('usuarios-table-body');
+            
+            if (usuarios.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="text-center">
+                            <i class="fas fa-users" style="font-size: 2rem; opacity: 0.5;"></i>
+                            <p>No hay usuarios registrados</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            tbody.innerHTML = usuarios.map(usuario => `
+                <tr>
+                    <td>${usuario.id}</td>
+                    <td>${usuario.nombre_completo || usuario.first_name + ' ' + usuario.last_name}</td>
+                    <td>${usuario.email}</td>
+                    <td>${usuario.telefono || 'N/A'}</td>
+                    <td>${usuario.carrera || 'N/A'}</td>
+                    <td>
+                        <span class="badge ${usuario.rol === 'admin' ? 'admin' : 'usuario'}">
+                            ${usuario.rol}
+                        </span>
+                    </td>
+                    <td>${new Date(usuario.fecha_registro).toLocaleDateString('es-CL')}</td>
+                    <td>${usuario.total_reservas || 0}</td>
+                    <td class="actions">
+                        <button class="btn btn-sm btn-info" onclick="verDetalles('usuario', ${usuario.id})">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-sm btn-warning" onclick="editarUsuario(${usuario.id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="eliminarUsuario(${usuario.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Funciones de utilidad
+        function mostrarAlerta(mensaje, tipo = 'info') {
+            const container = document.getElementById('admin-alert-container');
+            const alerta = document.createElement('div');
+            alerta.className = `alert alert-${tipo}`;
+            alerta.innerHTML = `
+                <i class="fas fa-${tipo === 'error' ? 'exclamation-triangle' : 'check-circle'}"></i>
+                ${mensaje}
+            `;
+            container.appendChild(alerta);
+            
+            setTimeout(() => alerta.remove(), 5000);
+        }
+
+        function abrirModal(tipo, id = null) {
+            // Implementar lógica para abrir modales
+            console.log(`Abrir modal ${tipo}`, id);
+        }
+
+        function verDetalles(tipo, id) {
+            // Implementar vista de detalles
+            console.log(`Ver detalles de ${tipo}`, id);
+        }
+
+        async function confirmarReserva(id) {
+            if (!confirm('¿Confirmar esta reserva?')) return;
+            
+            try {
+                const response = await fetch(`/api/reservas/${id}/confirmar/`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Error al confirmar reserva');
+                
+                mostrarAlerta('Reserva confirmada exitosamente', 'success');
+                cargarReservas();
+                
+            } catch (error) {
+                mostrarAlerta('Error al confirmar reserva: ' + error.message, 'error');
+            }
+        }
+
+        async function eliminarReserva(id) {
+            if (!confirm('¿Eliminar esta reserva permanentemente?')) return;
+            
+            try {
+                const response = await fetch(`/api/reservas/${id}/`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Error al eliminar reserva');
+                
+                mostrarAlerta('Reserva eliminada exitosamente', 'success');
+                cargarReservas();
+                
+            } catch (error) {
+                mostrarAlerta('Error al eliminar reserva: ' + error.message, 'error');
+            }
+        }
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAdminAuth();
+            
+            // Cargar datos iniciales
+            await cargarResumen();
+            
+            // Configurar fecha de última actualización
+            document.getElementById('last-update').textContent = 
+                new Date().toLocaleString('es-CL');
+            
+            // Configurar eventos adicionales
+            configurarEventos();
+            
+            // Actualizar periódicamente
+            setInterval(() => {
+                if (document.getElementById('resumen').classList.contains('active')) {
+                    cargarResumen();
+                }
+                document.getElementById('last-update').textContent = 
+                    new Date().toLocaleString('es-CL');
+            }, 30000); // Cada 30 segundos
+        });
+
+        function configurarEventos() {
+            // Configurar eventos de paginación
+            document.getElementById('prev-page').addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    cargarReservas();
+                }
+            });
+            
+            document.getElementById('next-page').addEventListener('click', () => {
+                currentPage++;
+                cargarReservas();
+            });
+            
+            document.getElementById('page-size').addEventListener('change', function() {
+                pageSize = parseInt(this.value);
+                currentPage = 1;
+                cargarReservas();
+            });
+            
+            // Eventos de filtros
+            document.getElementById('apply-filters').addEventListener('click', aplicarFiltros);
+            document.getElementById('clear-filters').addEventListener('click', limpiarFiltros);
+            
+            // Eventos de búsqueda
+            document.getElementById('search-salas-admin').addEventListener('input', buscarSalas);
+            document.getElementById('search-usuarios').addEventListener('input', buscarUsuarios);
+            
+            // Eventos de reportes
+            document.getElementById('report-period').addEventListener('change', function() {
+                document.getElementById('custom-dates').style.display = 
+                    this.value === 'personalizado' ? 'block' : 'none';
+            });
+            
+            document.getElementById('generate-report').addEventListener('click', generarReporte);
+        }
+
+        // Funciones adicionales que necesitarás implementar
+        function cargarFiltrosReservas() {
+            // Cargar opciones de salas para el filtro
+            // Cargar opciones de usuarios para el filtro
+        }
+
+        function aplicarFiltros() {
+            // Aplicar filtros a las reservas
+            console.log('Aplicando filtros...');
+        }
+
+        function limpiarFiltros() {
+            // Limpiar todos los filtros
+            console.log('Limpiando filtros...');
+        }
+
+        function buscarSalas() {
+            // Implementar búsqueda en tiempo real
+            console.log('Buscando salas...');
+        }
+
+        function buscarUsuarios() {
+            // Implementar búsqueda en tiempo real
+            console.log('Buscando usuarios...');
+        }
+
+        function generarReporte() {
+            // Generar reporte según las opciones seleccionadas
+            console.log('Generando reporte...');
+        }
+
+        function cargarReportesGuardados() {
+            // Cargar reportes previamente guardados
+            console.log('Cargando reportes guardados...');
+        }
+
+        function crearGraficoUsoSalas(salas) {
+            // Crear gráfico de uso de salas
+            console.log('Creando gráfico de uso de salas...');
+        }
+
+        function calcularEstadisticasUsuarios(usuarios) {
+            // Calcular estadísticas de usuarios
+            console.log('Calculando estadísticas de usuarios...');
+        }
+
+        function actualizarPaginacion(total) {
+            // Actualizar controles de paginación
+            const totalPages = Math.ceil(total / pageSize);
+            document.getElementById('page-info').textContent = 
+                `Página ${currentPage} de ${totalPages}`;
+            
+            document.getElementById('prev-page').disabled = currentPage <= 1;
+            document.getElementById('next-page').disabled = currentPage >= totalPages;
+        }
+    </script>
+
+    <style>
+        /* Estilos específicos para admin dashboard */
+        .admin-dashboard .stats-grid-admin {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card-admin {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: var(--border-radius-md);
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border: 1px solid rgba(67, 97, 238, 0.1);
+            transition: var(--transition);
+        }
+
+        .stat-card-admin:hover {
+            transform: translateY(-3px);
+            border-color: rgba(67, 97, 238, 0.3);
+        }
+
+        .stat-icon-admin {
+            width: 60px;
+            height: 60px;
+            border-radius: var(--border-radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .stat-icon-admin.total-reservas {
+            background: rgba(67, 97, 238, 0.2);
+            color: var(--primary-color);
+        }
+
+        .stat-icon-admin.usuarios-activos {
+            background: rgba(46, 204, 113, 0.2);
+            color: var(--success-color);
+        }
+
+        .stat-icon-admin.salas-disponibles {
+            background: rgba(76, 201, 240, 0.2);
+            color: var(--accent-color);
+        }
+
+        .stat-icon-admin.ocupacion {
+            background: rgba(155, 89, 182, 0.2);
+            color: #9b59b6;
+        }
+
+        .stat-content-admin {
+            flex: 1;
+        }
+
+        .stat-content-admin h4 {
+            font-size: 0.9rem;
+            color: var(--gray-300);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-number-admin {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--light-color);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-change {
+            font-size: 0.8rem;
+            color: var(--gray-500);
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: var(--border-radius-md);
+            border: 1px solid rgba(67, 97, 238, 0.1);
+            overflow: hidden;
+        }
+
+        .chart-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chart-header h3 {
+            font-size: 1rem;
+            color: var(--light-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .chart-body {
+            padding: 1.5rem;
+            height: 250px;
+        }
+
+        .recent-section,
+        .alerts-section {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: var(--border-radius-md);
+            border: 1px solid rgba(67, 97, 238, 0.1);
+            margin-bottom: 1.5rem;
+        }
+
+        .section-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-header h3 {
+            font-size: 1rem;
+            color: var(--light-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .recent-list,
+        .alerts-list {
+            padding: 1rem;
+        }
+
+        .recent-item,
+        .alert-item {
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: var(--border-radius-sm);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .recent-item:last-child,
+        .alert-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .recent-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .recent-details {
+            display: flex;
+            gap: 1rem;
+            font-size: 0.85rem;
+            color: var(--gray-500);
+        }
+
+        .alert-item.success {
+            border-left: 3px solid var(--success-color);
+        }
+
+        .alert-item.warning {
+            border-left: 3px solid var(--warning-color);
+        }
+
+        .alert-item.danger {
+            border-left: 3px solid var(--danger-color);
+        }
+
+        .advanced-filters {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: var(--border-radius-md);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(67, 97, 238, 0.1);
+        }
+
+        .filter-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--gray-300);
+            font-size: 0.9rem;
+        }
+
+        .date-range {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
+        }
+
+        .table-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: var(--border-radius-md);
+            border: 1px solid rgba(67, 97, 238, 0.1);
+            overflow: hidden;
+        }
+
+        .table-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-info {
+            color: var(--gray-500);
+            font-size: 0.9rem;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .data-table th {
+            background: rgba(67, 97, 238, 0.1);
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: var(--gray-300);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .data-table td {
+            padding: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--gray-400);
+        }
+
+        .data-table tr:hover {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .data-table .actions {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .data-table .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.8rem;
+        }
+
+        .truncate {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .table-footer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pagination {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .modal-lg {
+            max-width: 800px;
+        }
+
+        @media (max-width: 768px) {
+            .charts-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .filter-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .table-header,
+            .table-footer {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: stretch;
+            }
+            
+            .data-table {
+                font-size: 0.9rem;
+            }
+            
+            .data-table th,
+            .data-table td {
+                padding: 0.75rem;
+            }
+        }
+    </style>
+</body>
+</html>
