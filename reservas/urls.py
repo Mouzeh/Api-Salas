@@ -21,6 +21,8 @@ urlpatterns = [
     path('auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('auth/registro/', RegistroViewSet.as_view({'post': 'create'}), name='registro'),
     path('auth/check/', CheckAuthView.as_view(), name='check_auth'),  # Descomentado
+    path("auth/login/", LoginView.as_view(), name="auth_login"),
+    path("set-session/", set_session, name="set_session"),
     
     # API REST
     path('', include(router.urls)),

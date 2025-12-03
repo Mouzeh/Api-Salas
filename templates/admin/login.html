@@ -5,133 +5,80 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login - Sistema de Reservas</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: "Inter", sans-serif;
-            background: linear-gradient(135deg, #4361ee, #7209b7);
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-        }
-
-        .login-container {
-            background: rgba(255,255,255,0.1);
-            padding: 2rem;
-            width: 380px;
-            border-radius: 16px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-
-        h2 {
-            text-align: center;
-            margin-bottom: 1rem;
-        }
-
-        input {
-            width: 100%;
-            padding: 12px;
-            margin-top: 10px;
-            border-radius: 8px;
-            border: none;
-            outline: none;
-        }
-
-        button {
-            width: 100%;
-            margin-top: 15px;
-            padding: 14px;
-            border: none;
-            border-radius: 8px;
-            background: #4cc9f0;
-            color: #1a1a2e;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.25s;
-        }
-
-        button:hover {
-            background: #38bdf8;
-        }
-
-        .error {
-            background: rgba(255,0,0,0.2);
-            padding: 10px;
-            border-left: 4px solid red;
-            margin-top: 10px;
-            border-radius: 8px;
-        }
-
-    </style>
 </head>
-<body>
-    <div class="login-container">
-        <h2><i class="fas fa-calendar-alt"></i> Sistema de Reservas</h2>
+
+<body style="background: linear-gradient(135deg,#4361ee,#7209b7); height:100vh; display:flex; justify-content:center; align-items:center; color:white; font-family:Inter;">
+
+    <div style="background:rgba(255,255,255,0.1); padding:2rem; width:380px; border-radius:16px; backdrop-filter:blur(10px);">
+        <h2 style="text-align:center;"><i class="fas fa-calendar-alt"></i> Sistema de Reservas</h2>
 
         <div id="errorBox"></div>
 
-        <input id="email" type="email" placeholder="Correo electrónico">
-        <input id="password" type="password" placeholder="Contraseña">
+        <input id="email" type="email" placeholder="Correo electrónico" style="width:100%; padding:12px; border-radius:8px; margin-top:12px;">
+        <input id="password" type="password" placeholder="Contraseña" style="width:100%; padding:12px; border-radius:8px; margin-top:12px;">
 
-        <button onclick="login()">Iniciar Sesión</button>
+        <button onclick="login()" style="width:100%; padding:14px; background:#4cc9f0; color:#111; margin-top:15px; border-radius:8px; font-weight:bold;">Iniciar Sesión</button>
     </div>
 
-    <script>
-        function login() {
-            const email = document.getElementById("email").value.trim();
-            const password = document.getElementById("password").value;
 
-            if (!email || !password) {
-                showError("Debes ingresar email y contraseña.");
-                return;
+<script>
+async function login() {
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+
+    if (!email || !password) {
+        showError("Debes ingresar email y contraseña");
+        return;
+    }
+
+    try {
+        // 1) LOGIN JWT
+        const res = await fetch("/api/auth/login/", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            showError(data.error || "Credenciales incorrectas");
+            return;
+        }
+
+        // 2) Guardar tokens
+        localStorage.setItem("access_token", data.access);
+        localStorage.setItem("refresh_token", data.refresh);
+        localStorage.setItem("user", JSON.stringify(data.user));
+
+        // 3) Activar sesión Django
+        await fetch("/set-session/", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${data.access}`
             }
+        });
 
-            fetch("/api/auth/login/", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password })
-            })
-            .then(res => res.json())
-            .then(async data => {
-                if (data.access) {
-                    // Guardar tokens
-                    localStorage.setItem("access_token", data.access);
-                    localStorage.setItem("refresh_token", data.refresh);
-                    localStorage.setItem("user", JSON.stringify(data.user));
-
-                    // Crear sesión Django con el token (IMPORTANTE)
-                    await fetch("/set-session/", {
-                        method: "POST",
-                        headers: {
-                            "Authorization": `Bearer ${data.access}`
-                        }
-                    });
-
-                    // Redirigir según rol
-                    if (data.user.es_admin) {
-                        window.location.href = "/admin-dashboard/";
-                    } else {
-                        window.location.href = "/cliente-dashboard/";
-                    }
-                } else {
-                    showError(data.error || "Credenciales incorrectas");
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                showError("Error al conectar con el servidor");
-            });
+        // 4) Redirigir según rol
+        if (data.user.es_admin) {
+            window.location.href = "/admin-dashboard/";
+        } else {
+            window.location.href = "/cliente-dashboard/";
         }
 
-        function showError(msg) {
-            document.getElementById("errorBox").innerHTML = `
-                <div class="error">${msg}</div>
-            `;
-        }
-    </script>
+    } catch (err) {
+        console.log(err);
+        showError("Error al conectar con el servidor");
+    }
+}
+
+function showError(msg) {
+    document.getElementById("errorBox").innerHTML = `
+        <div style="background:rgba(255,0,0,0.2); padding:12px; margin-top:10px; border-left:4px solid red; border-radius:8px;">
+            ${msg}
+        </div>`;
+}
+</script>
+
 </body>
 </html>
