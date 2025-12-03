@@ -17,6 +17,29 @@
         const { useState } = React;
         const API_URL = '/api';
 
+        // ================================
+        // 🔴 FUNCIÓN DE LOGOUT
+        // ================================
+        const handleLogout = () => {
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          localStorage.removeItem('user');
+
+          if (window.axios?.defaults?.headers?.common) {
+            delete window.axios.defaults.headers.common['Authorization'];
+          }
+
+          window.location.href = '/login/';
+        };
+
+        // Verifica si el usuario está logueado
+        const isAuthenticated = () => {
+          return localStorage.getItem('access_token') !== null;
+        };
+
+        // ================================
+        // 🔵 COMPONENTE PRINCIPAL
+        // ================================
         function AuthPage() {
           const [isLogin, setIsLogin] = useState(true);
           const [loading, setLoading] = useState(false);
@@ -46,9 +69,7 @@
             try {
               const response = await fetch(`${API_URL}/auth/login/`, {
                 method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(loginData),
               });
 
@@ -59,39 +80,25 @@
 
               const data = await response.json();
               
-              // Guardar tokens en localStorage
               localStorage.setItem('access_token', data.access);
               localStorage.setItem('refresh_token', data.refresh);
               localStorage.setItem('user', JSON.stringify(data.user));
 
               setSuccess('¡Inicio de sesión exitoso! Redirigiendo...');
-              
-              // Redirigir según el rol del usuario
+
               setTimeout(() => {
-                if (data.user.es_admin) {
-                  // Para admin, hacer una solicitud al servidor para establecer la sesión
-                  fetch('/set-session/', {
+                fetch('/set-session/', {
                     method: 'POST',
                     headers: {
                       'Content-Type': 'application/json',
                       'Authorization': `Bearer ${data.access}`
                     }
-                  }).then(() => {
-                    window.location.href = '/admin-dashboard/';
-                  });
-                } else {
-                  // Para usuario regular
-                  fetch('/set-session/', {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      'Authorization': `Bearer ${data.access}`
-                    }
-                  }).then(() => {
-                    window.location.href = '/cliente-dashboard/';
-                  });
-                }
-              }, 1500);
+                }).then(() => {
+                    window.location.href = data.user.es_admin
+                        ? '/admin-dashboard/'
+                        : '/cliente-dashboard/';
+                });
+              }, 1200);
 
             } catch (err) {
               setError(err.message);
@@ -113,9 +120,7 @@
             try {
               const response = await fetch(`${API_URL}/auth/registro/`, {
                 method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(registerData),
               });
 
@@ -143,6 +148,8 @@
           return (
             <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4">
               <div className="w-full max-w-md">
+
+                {/* LOGO */}
                 <div className="text-center mb-8">
                   <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mb-4 shadow-lg">
                     <i className="fas fa-calendar-alt text-4xl text-white"></i>
@@ -151,6 +158,20 @@
                   <p className="text-blue-200">Gestión de salas de estudio</p>
                 </div>
 
+                {/* 👇 BOTÓN DE LOGOUT SI ESTÁ AUTENTICADO */}
+                {isAuthenticated() && (
+                  <div className="text-center mb-6">
+                    <button
+                      onClick={handleLogout}
+                      className="bg-gradient-to-r from-red-600 to-red-800 text-white px-5 py-2 rounded-lg font-semibold inline-flex items-center gap-2 shadow-lg hover:opacity-90 transition"
+                    >
+                      <i className="fas fa-sign-out-alt"></i>
+                      Cerrar Sesión
+                    </button>
+                  </div>
+                )}
+
+                {/* ERRORES */}
                 {error && (
                   <div className="mb-4 bg-red-500/10 border border-red-500 text-red-200 px-4 py-3 rounded-lg flex items-center gap-2">
                     <i className="fas fa-exclamation-circle"></i>
@@ -158,6 +179,7 @@
                   </div>
                 )}
 
+                {/* ÉXITO */}
                 {success && (
                   <div className="mb-4 bg-green-500/10 border border-green-500 text-green-200 px-4 py-3 rounded-lg flex items-center gap-2">
                     <i className="fas fa-check-circle"></i>
@@ -165,30 +187,20 @@
                   </div>
                 )}
 
+                {/* CAJA PRINCIPAL */}
                 <div className="bg-slate-800/90 backdrop-blur-lg rounded-2xl shadow-2xl border border-slate-700 overflow-hidden">
                   <div className="flex border-b border-slate-700">
                     <button
-                      onClick={() => {
-                        setIsLogin(true);
-                        setError(null);
-                        setSuccess(null);
-                      }}
-                      className={`flex-1 py-4 px-6 font-semibold transition ${
-                        isLogin ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
-                      }`}
+                      onClick={() => { setIsLogin(true); setError(null); setSuccess(null); }}
+                      className={`flex-1 py-4 px-6 font-semibold transition ${isLogin ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
                     >
                       <i className="fas fa-sign-in-alt mr-2"></i>
                       Iniciar Sesión
                     </button>
+
                     <button
-                      onClick={() => {
-                        setIsLogin(false);
-                        setError(null);
-                        setSuccess(null);
-                      }}
-                      className={`flex-1 py-4 px-6 font-semibold transition ${
-                        !isLogin ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
-                      }`}
+                      onClick={() => { setIsLogin(false); setError(null); setSuccess(null); }}
+                      className={`flex-1 py-4 px-6 font-semibold transition ${!isLogin ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
                     >
                       <i className="fas fa-user-plus mr-2"></i>
                       Registrarse
@@ -200,145 +212,82 @@
                       <div className="space-y-5">
                         <div>
                           <label className="block text-sm font-medium text-slate-300 mb-2">
-                            <i className="fas fa-envelope mr-2"></i>
-                            Correo Electrónico
+                            <i className="fas fa-envelope mr-2"></i> Correo Electrónico
                           </label>
                           <input
                             type="email"
-                            name="email"
                             value={loginData.email}
                             onChange={(e) => setLoginData({...loginData, email: e.target.value})}
+                            className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white"
                             placeholder="tu@email.com"
-                            className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 text-white"
                           />
                         </div>
 
                         <div>
                           <label className="block text-sm font-medium text-slate-300 mb-2">
-                            <i className="fas fa-lock mr-2"></i>
-                            Contraseña
+                            <i className="fas fa-lock mr-2"></i> Contraseña
                           </label>
                           <input
                             type="password"
-                            name="password"
                             value={loginData.password}
                             onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-                            placeholder="••••••••"
                             onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
-                            className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 text-white"
+                            className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white"
+                            placeholder="••••••••"
                           />
                         </div>
 
                         <button
                           onClick={handleLogin}
-                          disabled={loading || !loginData.email || !loginData.password}
-                          className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={loading}
+                          className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg"
                         >
                           {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
                         </button>
 
-                        <div className="text-center text-sm text-slate-400 mt-4 p-4 bg-slate-900/50 rounded-lg">
-                          <p className="font-semibold mb-2">Credenciales de prueba:</p>
-                          <p className="text-blue-300">Admin: admin@sistema.com / admin123</p>
-                          <p className="text-green-300">Usuario: juan@test.com / password123</p>
-                        </div>
                       </div>
                     ) : (
                       <div className="space-y-4">
+
                         <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">Nombre</label>
-                            <input
-                              type="text"
-                              value={registerData.first_name}
-                              onChange={(e) => setRegisterData({...registerData, first_name: e.target.value})}
-                              placeholder="Juan"
-                              className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 text-white"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-slate-300 mb-2">Apellido</label>
-                            <input
-                              type="text"
-                              value={registerData.last_name}
-                              onChange={(e) => setRegisterData({...registerData, last_name: e.target.value})}
-                              placeholder="Pérez"
-                              className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 text-white"
-                            />
-                          </div>
+                          <input className="input" placeholder="Nombre"
+                            value={registerData.first_name}
+                            onChange={(e) => setRegisterData({...registerData, first_name: e.target.value})} />
+                          <input className="input" placeholder="Apellido"
+                            value={registerData.last_name}
+                            onChange={(e) => setRegisterData({...registerData, last_name: e.target.value})} />
                         </div>
 
-                        <div>
-                          <label className="block text-sm font-medium text-slate-300 mb-2">Nombre de usuario</label>
-                          <input
-                            type="text"
-                            value={registerData.username}
-                            onChange={(e) => setRegisterData({...registerData, username: e.target.value})}
-                            placeholder="juanperez"
-                            className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 text-white"
-                          />
-                        </div>
+                        <input className="input" placeholder="Usuario"
+                          value={registerData.username}
+                          onChange={(e) => setRegisterData({...registerData, username: e.target.value})} />
 
-                        <div>
-                          <label className="block text-sm font-medium text-slate-300 mb-2">Email</label>
-                          <input
-                            type="email"
-                            value={registerData.email}
-                            onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
-                            placeholder="juan@email.com"
-                            className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 text-white"
-                          />
-                        </div>
+                        <input className="input" placeholder="Email"
+                          type="email"
+                          value={registerData.email}
+                          onChange={(e) => setRegisterData({...registerData, email: e.target.value})} />
 
-                        <div>
-                          <label className="block text-sm font-medium text-slate-300 mb-2">Teléfono</label>
-                          <input
-                            type="tel"
-                            value={registerData.telefono}
-                            onChange={(e) => setRegisterData({...registerData, telefono: e.target.value})}
-                            placeholder="+56912345678"
-                            className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 text-white"
-                          />
-                        </div>
+                        <input className="input" placeholder="Teléfono"
+                          value={registerData.telefono}
+                          onChange={(e) => setRegisterData({...registerData, telefono: e.target.value})} />
 
-                        <div>
-                          <label className="block text-sm font-medium text-slate-300 mb-2">Carrera</label>
-                          <input
-                            type="text"
-                            value={registerData.carrera}
-                            onChange={(e) => setRegisterData({...registerData, carrera: e.target.value})}
-                            placeholder="Ingeniería Informática"
-                            className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 text-white"
-                          />
-                        </div>
+                        <input className="input" placeholder="Carrera"
+                          value={registerData.carrera}
+                          onChange={(e) => setRegisterData({...registerData, carrera: e.target.value})} />
 
-                        <div>
-                          <label className="block text-sm font-medium text-slate-300 mb-2">Contraseña</label>
-                          <input
-                            type="password"
-                            value={registerData.password}
-                            onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
-                            placeholder="Mínimo 8 caracteres"
-                            className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 text-white"
-                          />
-                        </div>
+                        <input className="input" placeholder="Contraseña" type="password"
+                          value={registerData.password}
+                          onChange={(e) => setRegisterData({...registerData, password: e.target.value})} />
 
-                        <div>
-                          <label className="block text-sm font-medium text-slate-300 mb-2">Confirmar Contraseña</label>
-                          <input
-                            type="password"
-                            value={registerData.password2}
-                            onChange={(e) => setRegisterData({...registerData, password2: e.target.value})}
-                            placeholder="Repite tu contraseña"
-                            onKeyPress={(e) => e.key === 'Enter' && handleRegister()}
-                            className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded-lg focus:outline-none focus:border-blue-500 text-white"
-                          />
-                        </div>
+                        <input className="input" placeholder="Repetir Contraseña" type="password"
+                          onKeyPress={(e) => e.key === 'Enter' && handleRegister()}
+                          value={registerData.password2}
+                          onChange={(e) => setRegisterData({...registerData, password2: e.target.value})} />
 
                         <button
                           onClick={handleRegister}
                           disabled={loading}
-                          className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold rounded-lg transition disabled:opacity-50"
+                          className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg"
                         >
                           {loading ? 'Registrando...' : 'Crear Cuenta'}
                         </button>
@@ -353,11 +302,13 @@
                     ← Volver al inicio
                   </a>
                 </div>
+
               </div>
             </div>
           );
         }
 
+        // RENDER
         ReactDOM.render(<AuthPage />, document.getElementById('root'));
     </script>
 </body>
