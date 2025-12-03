@@ -12,6 +12,5 @@ urlpatterns = [
     path('cliente/', views.cliente_view, name='cliente'),
 ]
 
-# ESTO ES ESENCIAL para servir archivos estáticos en desarrollo:
-if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATICFILES_DIRS[0])
+# ¡ESTA LÍNEA ES CRÍTICA PARA SERVIR ARCHIVOS ESTÁTICOS EN DESARROLLO!
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

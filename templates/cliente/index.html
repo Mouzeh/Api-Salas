@@ -3,20 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Reservas - Salas de Estudio</title>
+    <title>Sistema de Reservas - Cliente</title>
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/cliente.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
     <div id="root"></div>
 
+    <!-- Cargar React -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- USAR VERBATIM PARA EVITAR QUE DJANGO INTERPRETE EL JS -->
+    {% verbatim %}
     <script type="text/babel">
-        {% verbatim %}
         const { useState, useEffect } = React;
         
         const API_URL = '/api';
@@ -24,111 +27,32 @@
         function App() {
             const [activeTab, setActiveTab] = useState('salas');
             const [salas, setSalas] = useState([]);
-            const [reservas, setReservas] = useState([]);
-            const [loading, setLoading] = useState(false);
-            const [error, setError] = useState('');
-            const [success, setSuccess] = useState('');
-            const [showModal, setShowModal] = useState(false);
-            const [usuarios, setUsuarios] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
 
             useEffect(() => {
-                fetchData();
-            }, [activeTab]);
+                cargarSalas();
+            }, []);
 
-            const fetchData = async () => {
-                setLoading(true);
-                setError('');
+            const cargarSalas = async () => {
                 try {
-                    if (activeTab === 'salas') {
-                        const response = await fetch(`${API_URL}/salas/`);
-                        const data = await response.json();
-                        setSalas(data);
-                    } else if (activeTab === 'reservas') {
-                        const response = await fetch(`${API_URL}/reservas/`);
-                        const data = await response.json();
-                        setReservas(data);
-                    }
+                    setLoading(true);
+                    const response = await fetch(`${API_URL}/salas/`);
+                    if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
+                    
+                    const data = await response.json();
+                    setSalas(data.results || data);
+                    setError(null);
                 } catch (err) {
-                    setError('Error al cargar los datos: ' + err.message);
+                    setError('No se pudieron cargar las salas. ' + err.message);
+                    console.error('Error:', err);
                 } finally {
                     setLoading(false);
                 }
             };
 
-            const fetchUsuarios = async () => {
-                try {
-                    const response = await fetch(`${API_URL}/usuarios/`);
-                    const data = await response.json();
-                    setUsuarios(data);
-                } catch (err) {
-                    console.error('Error al cargar usuarios:', err);
-                }
-            };
-
-            const handleCreateReserva = async (formData) => {
-                try {
-                    const response = await fetch(`${API_URL}/reservas/`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(formData)
-                    });
-
-                    if (!response.ok) {
-                        const errorData = await response.json();
-                        throw new Error(JSON.stringify(errorData));
-                    }
-
-                    setSuccess('¡Reserva creada exitosamente!');
-                    setShowModal(false);
-                    fetchData();
-                    setTimeout(() => setSuccess(''), 3000);
-                } catch (err) {
-                    setError('Error al crear reserva: ' + err.message);
-                    setTimeout(() => setError(''), 5000);
-                }
-            };
-
-            const handleConfirmarReserva = async (id) => {
-                try {
-                    const response = await fetch(`${API_URL}/reservas/${id}/confirmar/`, {
-                        method: 'POST',
-                    });
-
-                    if (!response.ok) throw new Error('Error al confirmar');
-
-                    setSuccess('¡Reserva confirmada!');
-                    fetchData();
-                    setTimeout(() => setSuccess(''), 3000);
-                } catch (err) {
-                    setError('Error al confirmar reserva: ' + err.message);
-                    setTimeout(() => setError(''), 5000);
-                }
-            };
-
-            const handleCancelarReserva = async (id) => {
-                if (!confirm('¿Estás seguro de cancelar esta reserva?')) return;
-
-                try {
-                    const response = await fetch(`${API_URL}/reservas/${id}/cancelar/`, {
-                        method: 'POST',
-                    });
-
-                    if (!response.ok) throw new Error('Error al cancelar');
-
-                    setSuccess('Reserva cancelada');
-                    fetchData();
-                    setTimeout(() => setSuccess(''), 3000);
-                } catch (err) {
-                    setError('Error al cancelar reserva: ' + err.message);
-                    setTimeout(() => setError(''), 5000);
-                }
-            };
-
-            const openModal = () => {
-                fetchUsuarios();
-                setShowModal(true);
+            const handleReservar = (salaId) => {
+                alert(`Funcionalidad de reserva para sala ID: ${salaId}`);
             };
 
             return (
@@ -137,18 +61,6 @@
                         <h1><i className="fas fa-calendar-alt"></i> Sistema de Reservas</h1>
                         <p className="subtitle">Gestión profesional de salas de estudio</p>
                     </header>
-                    
-                    {error && (
-                        <div className="alert alert-error">
-                            <i className="fas fa-exclamation-circle"></i> {error}
-                        </div>
-                    )}
-                    
-                    {success && (
-                        <div className="alert alert-success">
-                            <i className="fas fa-check-circle"></i> {success}
-                        </div>
-                    )}
 
                     <div className="tabs-container">
                         <div className="tabs">
@@ -156,23 +68,23 @@
                                 className={`tab ${activeTab === 'salas' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('salas')}
                             >
-                                <i className="fas fa-door-open"></i> Salas Disponibles
+                                <i className="fas fa-door-open"></i> Salas
                             </button>
                             <button 
                                 className={`tab ${activeTab === 'reservas' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('reservas')}
                             >
-                                <i className="fas fa-calendar-check"></i> Mis Reservas
+                                <i className="fas fa-calendar-check"></i> Reservas
                             </button>
                         </div>
                     </div>
 
                     <main className="main-content">
                         <div className="header-actions">
-                            <button className="btn btn-primary" onClick={openModal}>
+                            <button className="btn btn-primary" onClick={() => alert('Nueva reserva - Funcionalidad pendiente')}>
                                 <i className="fas fa-plus"></i> Nueva Reserva
                             </button>
-                            <button className="btn btn-secondary" onClick={fetchData}>
+                            <button className="btn btn-secondary" onClick={cargarSalas}>
                                 <i className="fas fa-sync-alt"></i> Actualizar
                             </button>
                         </div>
@@ -180,392 +92,73 @@
                         {loading ? (
                             <div className="loading-container">
                                 <div className="loading-spinner"></div>
-                                <p>Cargando datos...</p>
+                                <p>Cargando salas...</p>
                             </div>
+                        ) : error ? (
+                            <div className="alert alert-error">
+                                <i className="fas fa-exclamation-circle"></i> {error}
+                            </div>
+                        ) : activeTab === 'salas' ? (
+                            salas.length === 0 ? (
+                                <div className="empty-state">
+                                    <i className="fas fa-door-closed"></i>
+                                    <h3>No hay salas disponibles</h3>
+                                    <p>Ejecuta: <code>python manage.py crear_datos</code> para generar datos de prueba</p>
+                                </div>
+                            ) : (
+                                <>
+                                    <h2 className="section-title">
+                                        <i className="fas fa-door-open"></i> Salas Disponibles ({salas.filter(s => s.estado === 'disponible').length})
+                                    </h2>
+                                    <div className="salas-grid">
+                                        {salas.map(sala => (
+                                            <div key={sala.id} className="sala-card">
+                                                <h3>
+                                                    {sala.nombre}
+                                                    <span className={`badge ${sala.estado}`}>
+                                                        <i className="fas fa-circle"></i> {sala.estado}
+                                                    </span>
+                                                </h3>
+                                                <div className="sala-info">
+                                                    <div className="info-item">
+                                                        <i className="fas fa-map-marker-alt"></i>
+                                                        <span><strong>Ubicación:</strong> {sala.ubicacion}</span>
+                                                    </div>
+                                                    <div className="info-item">
+                                                        <i className="fas fa-users"></i>
+                                                        <span><strong>Capacidad:</strong> {sala.capacidad} personas</span>
+                                                    </div>
+                                                    <div className="info-item">
+                                                        <i className="fas fa-tools"></i>
+                                                        <span><strong>Equipamiento:</strong> {sala.equipamiento}</span>
+                                                    </div>
+                                                </div>
+                                                <button 
+                                                    className="btn btn-primary w-100" 
+                                                    onClick={() => handleReservar(sala.id)}
+                                                    style={{marginTop: '1rem'}}
+                                                >
+                                                    <i className="fas fa-bookmark"></i> Reservar esta sala
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            )
                         ) : (
-                            <>
-                                {activeTab === 'salas' && (
-                                    <SalasView salas={salas} onCreateReserva={openModal} />
-                                )}
-                                {activeTab === 'reservas' && (
-                                    <ReservasView 
-                                        reservas={reservas} 
-                                        onConfirmar={handleConfirmarReserva}
-                                        onCancelar={handleCancelarReserva}
-                                    />
-                                )}
-                            </>
+                            <div className="empty-state">
+                                <i className="fas fa-calendar-times"></i>
+                                <h3>No hay reservas</h3>
+                                <p>Haz clic en "Nueva Reserva" para comenzar</p>
+                            </div>
                         )}
                     </main>
-
-                    <ReservaModal 
-                        show={showModal} 
-                        onClose={() => setShowModal(false)}
-                        onSubmit={handleCreateReserva}
-                        salas={salas}
-                        usuarios={usuarios}
-                    />
                 </div>
             );
         }
 
-        function SalasView({ salas, onCreateReserva }) {
-            if (salas.length === 0) {
-                return (
-                    <div className="empty-state">
-                        <i className="fas fa-door-closed"></i>
-                        <h3>No hay salas disponibles</h3>
-                        <p>Intenta actualizar la página o contacta al administrador</p>
-                    </div>
-                );
-            }
-
-            const salasDisponibles = salas.filter(s => s.estado === 'disponible');
-            const salasMantenimiento = salas.filter(s => s.estado === 'mantenimiento');
-
-            return (
-                <>
-                    <h2 className="section-title">
-                        <i className="fas fa-door-open"></i> Salas Disponibles ({salasDisponibles.length})
-                    </h2>
-                    
-                    <div className="salas-grid">
-                        {salasDisponibles.map(sala => (
-                            <div key={sala.id} className="sala-card">
-                                <h3>
-                                    {sala.nombre}
-                                    <span className={`badge ${sala.estado}`}>
-                                        <i className="fas fa-circle"></i> {sala.estado}
-                                    </span>
-                                </h3>
-                                
-                                <div className="sala-info">
-                                    <div className="info-item">
-                                        <i className="fas fa-map-marker-alt"></i>
-                                        <span><strong>Ubicación:</strong> {sala.ubicacion}</span>
-                                    </div>
-                                    <div className="info-item">
-                                        <i className="fas fa-users"></i>
-                                        <span><strong>Capacidad:</strong> {sala.capacidad} personas</span>
-                                    </div>
-                                    <div className="info-item">
-                                        <i className="fas fa-tools"></i>
-                                        <span><strong>Equipamiento:</strong> {sala.equipamiento}</span>
-                                    </div>
-                                </div>
-                                
-                                <button 
-                                    className="btn btn-primary w-100"
-                                    onClick={onCreateReserva}
-                                    style={{marginTop: '1rem'}}
-                                >
-                                    <i className="fas fa-bookmark"></i> Reservar esta sala
-                                </button>
-                            </div>
-                        ))}
-                    </div>
-                    
-                    {salasMantenimiento.length > 0 && (
-                        <>
-                            <h2 className="section-title mt-4">
-                                <i className="fas fa-wrench"></i> En Mantenimiento ({salasMantenimiento.length})
-                            </h2>
-                            <div className="salas-grid">
-                                {salasMantenimiento.map(sala => (
-                                    <div key={sala.id} className="sala-card">
-                                        <h3>
-                                            {sala.nombre}
-                                            <span className={`badge ${sala.estado}`}>
-                                                <i className="fas fa-wrench"></i> {sala.estado}
-                                            </span>
-                                        </h3>
-                                        <div className="sala-info">
-                                            <div className="info-item">
-                                                <i className="fas fa-map-marker-alt"></i>
-                                                <span>{sala.ubicacion}</span>
-                                            </div>
-                                            <p style={{color: '#adb5bd', fontStyle: 'italic'}}>
-                                                Esta sala no está disponible temporalmente por mantenimiento.
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        </>
-                    )}
-                </>
-            );
-        }
-
-        function ReservasView({ reservas, onConfirmar, onCancelar }) {
-            if (reservas.length === 0) {
-                return (
-                    <div className="empty-state">
-                        <i className="fas fa-calendar-times"></i>
-                        <h3>No tienes reservas</h3>
-                        <p>Crea tu primera reserva haciendo clic en "Nueva Reserva"</p>
-                    </div>
-                );
-            }
-
-            const reservasPendientes = reservas.filter(r => r.estado === 'pendiente');
-            const reservasConfirmadas = reservas.filter(r => r.estado === 'confirmada');
-            const reservasCanceladas = reservas.filter(r => r.estado === 'cancelada');
-
-            return (
-                <>
-                    {reservasPendientes.length > 0 && (
-                        <>
-                            <h2 className="section-title">
-                                <i className="fas fa-clock"></i> Reservas Pendientes ({reservasPendientes.length})
-                            </h2>
-                            {reservasPendientes.map(reserva => (
-                                <ReservaCard 
-                                    key={reserva.id}
-                                    reserva={reserva}
-                                    onConfirmar={onConfirmar}
-                                    onCancelar={onCancelar}
-                                />
-                            ))}
-                        </>
-                    )}
-                    
-                    {reservasConfirmadas.length > 0 && (
-                        <>
-                            <h2 className="section-title mt-4">
-                                <i className="fas fa-check-circle"></i> Reservas Confirmadas ({reservasConfirmadas.length})
-                            </h2>
-                            {reservasConfirmadas.map(reserva => (
-                                <ReservaCard 
-                                    key={reserva.id}
-                                    reserva={reserva}
-                                    onConfirmar={onConfirmar}
-                                    onCancelar={onCancelar}
-                                />
-                            ))}
-                        </>
-                    )}
-                    
-                    {reservasCanceladas.length > 0 && (
-                        <>
-                            <h2 className="section-title mt-4">
-                                <i className="fas fa-times-circle"></i> Reservas Canceladas ({reservasCanceladas.length})
-                            </h2>
-                            {reservasCanceladas.map(reserva => (
-                                <ReservaCard 
-                                    key={reserva.id}
-                                    reserva={reserva}
-                                    onConfirmar={onConfirmar}
-                                    onCancelar={onCancelar}
-                                />
-                            ))}
-                        </>
-                    )}
-                </>
-            );
-        }
-
-        function ReservaCard({ reserva, onConfirmar, onCancelar }) {
-            return (
-                <div className="reserva-card">
-                    <div className="reserva-header">
-                        <h3>
-                            <i className="fas fa-door-open"></i> {reserva.sala_nombre}
-                            <span className={`badge ${reserva.estado}`}>
-                                {reserva.estado}
-                            </span>
-                        </h3>
-                    </div>
-                    
-                    <div className="reserva-info-grid">
-                        <div className="reserva-info-item">
-                            <strong><i className="fas fa-user"></i> Usuario</strong>
-                            <span>{reserva.usuario_nombre}</span>
-                        </div>
-                        <div className="reserva-info-item">
-                            <strong><i className="fas fa-map-marker-alt"></i> Ubicación</strong>
-                            <span>{reserva.sala_ubicacion}</span>
-                        </div>
-                        <div className="reserva-info-item">
-                            <strong><i className="fas fa-calendar"></i> Fecha</strong>
-                            <span>{reserva.fecha}</span>
-                        </div>
-                        <div className="reserva-info-item">
-                            <strong><i className="fas fa-clock"></i> Horario</strong>
-                            <span>{reserva.hora_inicio} - {reserva.hora_fin}</span>
-                        </div>
-                    </div>
-                    
-                    {reserva.estado === 'pendiente' && (
-                        <div className="reserva-actions">
-                            <button 
-                                className="btn btn-success"
-                                onClick={() => onConfirmar(reserva.id)}
-                            >
-                                <i className="fas fa-check"></i> Confirmar
-                            </button>
-                            <button 
-                                className="btn btn-danger"
-                                onClick={() => onCancelar(reserva.id)}
-                            >
-                                <i className="fas fa-times"></i> Cancelar
-                            </button>
-                        </div>
-                    )}
-                </div>
-            );
-        }
-
-        function ReservaModal({ show, onClose, onSubmit, salas, usuarios }) {
-            const [formData, setFormData] = useState({
-                usuario: '',
-                sala: '',
-                fecha: new Date().toISOString().split('T')[0],
-                hora_inicio: '09:00',
-                hora_fin: '10:00',
-                motivo_uso: ''
-            });
-
-            const handleSubmit = (e) => {
-                e.preventDefault();
-                onSubmit(formData);
-                setFormData({
-                    usuario: '',
-                    sala: '',
-                    fecha: new Date().toISOString().split('T')[0],
-                    hora_inicio: '09:00',
-                    hora_fin: '10:00',
-                    motivo_uso: ''
-                });
-            };
-
-            const handleChange = (e) => {
-                setFormData({
-                    ...formData,
-                    [e.target.name]: e.target.value
-                });
-            };
-
-            if (!show) return null;
-
-            return (
-                <div className={`modal-overlay ${show ? 'active' : ''}`} onClick={onClose}>
-                    <div className="modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-header">
-                            <h2><i className="fas fa-plus-circle"></i> Nueva Reserva</h2>
-                            <button className="modal-close" onClick={onClose}>
-                                <i className="fas fa-times"></i>
-                            </button>
-                        </div>
-                        
-                        <div className="modal-body">
-                            <form onSubmit={handleSubmit}>
-                                <div className="form-group">
-                                    <label><i className="fas fa-user"></i> Usuario</label>
-                                    <select 
-                                        className="form-control"
-                                        name="usuario" 
-                                        value={formData.usuario} 
-                                        onChange={handleChange} 
-                                        required
-                                    >
-                                        <option value="">Seleccione un usuario</option>
-                                        {usuarios.map(u => (
-                                            <option key={u.id} value={u.id}>
-                                                {u.nombre} - {u.carrera}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="form-group">
-                                    <label><i className="fas fa-door-open"></i> Sala</label>
-                                    <select 
-                                        className="form-control"
-                                        name="sala" 
-                                        value={formData.sala} 
-                                        onChange={handleChange} 
-                                        required
-                                    >
-                                        <option value="">Seleccione una sala</option>
-                                        {salas.filter(s => s.estado === 'disponible').map(sala => (
-                                            <option key={sala.id} value={sala.id}>
-                                                {sala.nombre} - Capacidad: {sala.capacidad} - {sala.ubicacion}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div className="form-group">
-                                    <label><i className="fas fa-calendar"></i> Fecha</label>
-                                    <input 
-                                        className="form-control"
-                                        type="date" 
-                                        name="fecha" 
-                                        value={formData.fecha} 
-                                        onChange={handleChange} 
-                                        required 
-                                        min={new Date().toISOString().split('T')[0]}
-                                    />
-                                </div>
-
-                                <div className="form-group">
-                                    <label><i className="fas fa-clock"></i> Hora Inicio</label>
-                                    <input 
-                                        className="form-control"
-                                        type="time" 
-                                        name="hora_inicio" 
-                                        value={formData.hora_inicio} 
-                                        onChange={handleChange} 
-                                        required 
-                                        min="08:00"
-                                        max="21:00"
-                                    />
-                                </div>
-
-                                <div className="form-group">
-                                    <label><i className="fas fa-clock"></i> Hora Fin</label>
-                                    <input 
-                                        className="form-control"
-                                        type="time" 
-                                        name="hora_fin" 
-                                        value={formData.hora_fin} 
-                                        onChange={handleChange} 
-                                        required 
-                                        min={formData.hora_inicio}
-                                        max="22:00"
-                                    />
-                                </div>
-
-                                <div className="form-group">
-                                    <label><i className="fas fa-comment"></i> Motivo de Uso</label>
-                                    <textarea 
-                                        className="form-control"
-                                        name="motivo_uso" 
-                                        value={formData.motivo_uso} 
-                                        onChange={handleChange} 
-                                        required
-                                        placeholder="Describe el motivo de tu reserva..."
-                                    />
-                                </div>
-
-                                <div className="modal-footer">
-                                    <button type="button" className="btn btn-secondary" onClick={onClose}>
-                                        <i className="fas fa-times"></i> Cancelar
-                                    </button>
-                                    <button type="submit" className="btn btn-primary">
-                                        <i className="fas fa-check"></i> Crear Reserva
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            );
-        }
-
-        ReactDOM.render(React.createElement(App), document.getElementById('root'));
-        {% endverbatim %}
+        ReactDOM.render(<App />, document.getElementById('root'));
     </script>
+    {% endverbatim %}
 </body>
 </html>
