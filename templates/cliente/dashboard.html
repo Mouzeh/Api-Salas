@@ -897,36 +897,41 @@
         });
 
         // Cerrar sesión - CORREGIDO
-        document.getElementById('logout-btn').addEventListener('click', async function() {
-            try {
-                const token = localStorage.getItem('access_token');
-                
-                // 1. Llamar al endpoint de logout del backend
-                const response = await fetch('/logout/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`,
-                        'X-CSRFToken': getCookie('csrftoken')
-                    },
-                    credentials: 'same-origin'
-                });
-                
-                // 2. Limpiar localStorage
-                localStorage.removeItem('access_token');
-                localStorage.removeItem('refresh_token');
-                localStorage.removeItem('user');
-                
-                // 3. Redirigir al login
-                window.location.href = '/login/';
-                
-            } catch (error) {
-                console.error('Error en logout:', error);
-                // Si falla, al menos limpiar y redirigir
-                localStorage.clear();
-                window.location.href = '/login/';
-            }
-        });
+// --- LOGOUT PROFESIONAL JWT + DJANGO ---
+document.getElementById('logout-btn').addEventListener('click', async function() {
+
+    const access = localStorage.getItem("access_token");
+    const refresh = localStorage.getItem("refresh_token");
+
+    // 1) Invalidar JWT refresh en el backend (si está activo el blacklist)
+    if (access && refresh) {
+        try {
+            await fetch("/api/auth/logout/", {
+                method: "POST",
+                headers: { 
+                    "Authorization": `Bearer ${access}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ refresh })
+            });
+        } catch (err) {
+            console.log("Error invalidando JWT:", err);
+        }
+    }
+
+    // 2) Limpiar tokens localmente
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user");
+
+    // 3) Cerrar sesión Django
+    try {
+        await fetch("/logout/", { method: "GET" });
+    } catch (e) {}
+
+    // 4) Redirigir al login
+    window.location.href = "/login/";
+});
 
         // Filtros
         document.getElementById('filter-estado').addEventListener('change', function() {

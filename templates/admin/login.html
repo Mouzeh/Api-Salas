@@ -1,563 +1,137 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login - Sistema de Reservas</title>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * {
+        body {
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            min-height: 100vh;
+            font-family: "Inter", sans-serif;
+            background: linear-gradient(135deg, #4361ee, #7209b7);
+            height: 100vh;
             display: flex;
-            align-items: center;
             justify-content: center;
-            padding: 20px;
+            align-items: center;
+            color: white;
         }
-        
-        .input {
+
+        .login-container {
+            background: rgba(255,255,255,0.1);
+            padding: 2rem;
+            width: 380px;
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        input {
             width: 100%;
-            padding: 12px 16px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 12px;
+            margin-top: 10px;
             border-radius: 8px;
-            color: white;
-            font-size: 14px;
-            transition: all 0.3s ease;
-        }
-        
-        .input:focus {
+            border: none;
             outline: none;
-            border-color: #4361ee;
-            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
         }
-        
-        .btn-primary {
-            background: linear-gradient(135deg, #4361ee 0%, #7209b7 100%);
-            color: white;
-            padding: 14px 24px;
+
+        button {
+            width: 100%;
+            margin-top: 15px;
+            padding: 14px;
             border: none;
             border-radius: 8px;
-            font-weight: 600;
+            background: #4cc9f0;
+            color: #1a1a2e;
+            font-weight: bold;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: 0.25s;
         }
-        
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(67, 97, 238, 0.3);
+
+        button:hover {
+            background: #38bdf8;
         }
-        
-        .btn-primary:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none !important;
-        }
-        
-        .alert {
-            padding: 12px 16px;
+
+        .error {
+            background: rgba(255,0,0,0.2);
+            padding: 10px;
+            border-left: 4px solid red;
+            margin-top: 10px;
             border-radius: 8px;
-            margin-bottom: 16px;
-            font-size: 14px;
         }
-        
-        .alert-error {
-            background: rgba(231, 76, 60, 0.1);
-            border: 1px solid rgba(231, 76, 60, 0.3);
-            color: #e74c3c;
-        }
-        
-        .alert-success {
-            background: rgba(46, 204, 113, 0.1);
-            border: 1px solid rgba(46, 204, 113, 0.3);
-            color: #2ecc71;
-        }
+
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <div class="login-container">
+        <h2><i class="fas fa-calendar-alt"></i> Sistema de Reservas</h2>
 
-    <script type="text/babel">
-        const { useState, useEffect } = React;
-        const API_URL = '/api';
+        <div id="errorBox"></div>
 
-        // ================================
-        // 🔴 FUNCIÓN PARA OBTENER CSRF TOKEN
-        // ================================
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
+        <input id="email" type="email" placeholder="Correo electrónico">
+        <input id="password" type="password" placeholder="Contraseña">
+
+        <button onclick="login()">Iniciar Sesión</button>
+    </div>
+
+    <script>
+        function login() {
+            const email = document.getElementById("email").value.trim();
+            const password = document.getElementById("password").value;
+
+            if (!email || !password) {
+                showError("Debes ingresar email y contraseña.");
+                return;
             }
-            return cookieValue;
-        }
 
-        // ================================
-        // 🔴 COMPONENTE PRINCIPAL
-        // ================================
-        function AuthPage() {
-            const [isLogin, setIsLogin] = useState(true);
-            const [loading, setLoading] = useState(false);
-            const [error, setError] = useState('');
-            const [success, setSuccess] = useState('');
-            
-            const [loginData, setLoginData] = useState({
-                email: '',
-                password: ''
-            });
-            
-            const [registerData, setRegisterData] = useState({
-                username: '',
-                email: '',
-                password: '',
-                password2: '',
-                first_name: '',
-                last_name: '',
-                telefono: '',
-                carrera: ''
-            });
-
-            // Verificar si ya está autenticado
-            useEffect(() => {
-                const token = localStorage.getItem('access_token');
-                if (token) {
-                    // Verificar si el token es válido
-                    checkAuth(token);
-                }
-            }, []);
-
-            const checkAuth = async (token) => {
-                try {
-                    const response = await fetch(`${API_URL}/auth/check/`, {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
-                    });
-                    
-                    if (response.ok) {
-                        window.location.href = '/cliente-dashboard/';
-                    }
-                } catch (err) {
-                    // Token inválido, limpiar localStorage
-                    localStorage.removeItem('access_token');
-                    localStorage.removeItem('refresh_token');
-                    localStorage.removeItem('user');
-                }
-            };
-
-            const handleLogin = async (e) => {
-                if (e) e.preventDefault();
-                setLoading(true);
-                setError('');
-                setSuccess('');
-
-                try {
-                    // Validación básica
-                    if (!loginData.email || !loginData.password) {
-                        throw new Error('Por favor completa todos los campos');
-                    }
-
-                    // Validar formato email
-                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                    if (!emailRegex.test(loginData.email)) {
-                        throw new Error('Por favor ingresa un email válido');
-                    }
-
-                    const response = await fetch(`${API_URL}/auth/login/`, {
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            email: loginData.email.trim(),
-                            password: loginData.password
-                        }),
-                    });
-
-                    const data = await response.json();
-
-                    if (!response.ok) {
-                        throw new Error(data.detail || data.error || 'Credenciales incorrectas');
-                    }
-
+            fetch("/api/auth/login/", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password })
+            })
+            .then(res => res.json())
+            .then(async data => {
+                if (data.access) {
                     // Guardar tokens
-                    localStorage.setItem('access_token', data.access);
-                    localStorage.setItem('refresh_token', data.refresh);
-                    localStorage.setItem('user', JSON.stringify(data.user));
+                    localStorage.setItem("access_token", data.access);
+                    localStorage.setItem("refresh_token", data.refresh);
+                    localStorage.setItem("user", JSON.stringify(data.user));
 
-                    setSuccess('¡Inicio de sesión exitoso! Redirigiendo...');
-
-                    // Establecer sesión en Django
-                    setTimeout(async () => {
-                        try {
-                            await fetch('/set-session/', {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': `Bearer ${data.access}`
-                                }
-                            });
-                            
-                            // Redirigir según rol
-                            window.location.href = data.user.es_admin 
-                                ? '/admin-dashboard/' 
-                                : '/cliente-dashboard/';
-                                
-                        } catch (err) {
-                            console.error('Error estableciendo sesión:', err);
-                            // Redirigir de todas formas
-                            window.location.href = data.user.es_admin 
-                                ? '/admin-dashboard/' 
-                                : '/cliente-dashboard/';
+                    // Crear sesión Django con el token (IMPORTANTE)
+                    await fetch("/set-session/", {
+                        method: "POST",
+                        headers: {
+                            "Authorization": `Bearer ${data.access}`
                         }
-                    }, 1500);
-
-                } catch (err) {
-                    setError(err.message);
-                    console.error('Login error:', err);
-                } finally {
-                    setLoading(false);
-                }
-            };
-
-            const handleRegister = async (e) => {
-                if (e) e.preventDefault();
-                setLoading(true);
-                setError('');
-                setSuccess('');
-
-                try {
-                    // Validaciones
-                    if (!registerData.username || !registerData.email || !registerData.password || 
-                        !registerData.password2 || !registerData.first_name || !registerData.last_name) {
-                        throw new Error('Por favor completa todos los campos obligatorios');
-                    }
-
-                    if (registerData.password !== registerData.password2) {
-                        throw new Error('Las contraseñas no coinciden');
-                    }
-
-                    if (registerData.password.length < 8) {
-                        throw new Error('La contraseña debe tener al menos 8 caracteres');
-                    }
-
-                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                    if (!emailRegex.test(registerData.email)) {
-                        throw new Error('Por favor ingresa un email válido');
-                    }
-
-                    const response = await fetch(`${API_URL}/auth/registro/`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            username: registerData.username.trim(),
-                            email: registerData.email.trim(),
-                            password: registerData.password,
-                            password2: registerData.password2,
-                            first_name: registerData.first_name.trim(),
-                            last_name: registerData.last_name.trim(),
-                            telefono: registerData.telefono || '',
-                            carrera: registerData.carrera || ''
-                        }),
                     });
 
-                    const data = await response.json();
-
-                    if (!response.ok) {
-                        // Manejar errores de validación del backend
-                        const errors = [];
-                        if (data.email) errors.push(data.email[0]);
-                        if (data.username) errors.push(data.username[0]);
-                        if (data.password) errors.push(data.password[0]);
-                        
-                        throw new Error(errors.join(', ') || 'Error al registrarse');
+                    // Redirigir según rol
+                    if (data.user.es_admin) {
+                        window.location.href = "/admin-dashboard/";
+                    } else {
+                        window.location.href = "/cliente-dashboard/";
                     }
-
-                    setSuccess('¡Registro exitoso! Ahora puedes iniciar sesión.');
-                    
-                    // Limpiar formulario y cambiar a login
-                    setTimeout(() => {
-                        setIsLogin(true);
-                        setRegisterData({
-                            username: '',
-                            email: '',
-                            password: '',
-                            password2: '',
-                            first_name: '',
-                            last_name: '',
-                            telefono: '',
-                            carrera: ''
-                        });
-                        setLoginData(prev => ({ ...prev, email: registerData.email }));
-                    }, 2000);
-
-                } catch (err) {
-                    setError(err.message);
-                    console.error('Register error:', err);
-                } finally {
-                    setLoading(false);
+                } else {
+                    showError(data.error || "Credenciales incorrectas");
                 }
-            };
-
-            return (
-                <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4">
-                    <div className="w-full max-w-md">
-                        {/* LOGO */}
-                        <div className="text-center mb-8">
-                            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full mb-4 shadow-lg">
-                                <i className="fas fa-calendar-alt text-4xl text-white"></i>
-                            </div>
-                            <h1 className="text-3xl font-bold text-white mb-2">Sistema de Reservas</h1>
-                            <p className="text-blue-200">Gestión de salas de estudio</p>
-                        </div>
-
-                        {/* MENSAJES */}
-                        {error && (
-                            <div className="alert alert-error mb-4">
-                                <i className="fas fa-exclamation-circle mr-2"></i>
-                                {error}
-                            </div>
-                        )}
-
-                        {success && (
-                            <div className="alert alert-success mb-4">
-                                <i className="fas fa-check-circle mr-2"></i>
-                                {success}
-                            </div>
-                        )}
-
-                        {/* CAJA PRINCIPAL */}
-                        <div className="bg-slate-800/90 backdrop-blur-lg rounded-2xl shadow-2xl border border-slate-700 overflow-hidden">
-                            {/* TABS */}
-                            <div className="flex border-b border-slate-700">
-                                <button
-                                    onClick={() => { setIsLogin(true); setError(''); setSuccess(''); }}
-                                    className={`flex-1 py-4 px-6 font-semibold transition ${isLogin ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
-                                >
-                                    <i className="fas fa-sign-in-alt mr-2"></i>
-                                    Iniciar Sesión
-                                </button>
-
-                                <button
-                                    onClick={() => { setIsLogin(false); setError(''); setSuccess(''); }}
-                                    className={`flex-1 py-4 px-6 font-semibold transition ${!isLogin ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'}`}
-                                >
-                                    <i className="fas fa-user-plus mr-2"></i>
-                                    Registrarse
-                                </button>
-                            </div>
-
-                            <div className="p-8">
-                                {isLogin ? (
-                                    <form onSubmit={handleLogin}>
-                                        <div className="space-y-5">
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-300 mb-2">
-                                                    <i className="fas fa-envelope mr-2"></i> Correo Electrónico *
-                                                </label>
-                                                <input
-                                                    type="email"
-                                                    value={loginData.email}
-                                                    onChange={(e) => setLoginData({...loginData, email: e.target.value})}
-                                                    className="input"
-                                                    placeholder="tu@email.com"
-                                                    required
-                                                    disabled={loading}
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-sm font-medium text-slate-300 mb-2">
-                                                    <i className="fas fa-lock mr-2"></i> Contraseña *
-                                                </label>
-                                                <input
-                                                    type="password"
-                                                    value={loginData.password}
-                                                    onChange={(e) => setLoginData({...loginData, password: e.target.value})}
-                                                    className="input"
-                                                    placeholder="••••••••"
-                                                    required
-                                                    disabled={loading}
-                                                />
-                                            </div>
-
-                                            <button
-                                                type="submit"
-                                                disabled={loading}
-                                                className="btn-primary w-full"
-                                            >
-                                                {loading ? (
-                                                    <>
-                                                        <i className="fas fa-spinner fa-spin mr-2"></i>
-                                                        Iniciando sesión...
-                                                    </>
-                                                ) : 'Iniciar Sesión'}
-                                            </button>
-                                        </div>
-                                    </form>
-                                ) : (
-                                    <form onSubmit={handleRegister}>
-                                        <div className="space-y-4">
-                                            {/* Nombre y Apellido */}
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="block text-sm text-slate-300 mb-1">Nombre *</label>
-                                                    <input 
-                                                        type="text"
-                                                        value={registerData.first_name}
-                                                        onChange={(e) => setRegisterData({...registerData, first_name: e.target.value})}
-                                                        className="input"
-                                                        placeholder="Juan"
-                                                        required
-                                                        disabled={loading}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm text-slate-300 mb-1">Apellido *</label>
-                                                    <input 
-                                                        type="text"
-                                                        value={registerData.last_name}
-                                                        onChange={(e) => setRegisterData({...registerData, last_name: e.target.value})}
-                                                        className="input"
-                                                        placeholder="Pérez"
-                                                        required
-                                                        disabled={loading}
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            {/* Usuario */}
-                                            <div>
-                                                <label className="block text-sm text-slate-300 mb-1">Usuario *</label>
-                                                <input 
-                                                    type="text"
-                                                    value={registerData.username}
-                                                    onChange={(e) => setRegisterData({...registerData, username: e.target.value})}
-                                                    className="input"
-                                                    placeholder="juanperez"
-                                                    required
-                                                    disabled={loading}
-                                                />
-                                            </div>
-
-                                            {/* Email */}
-                                            <div>
-                                                <label className="block text-sm text-slate-300 mb-1">Email *</label>
-                                                <input 
-                                                    type="email"
-                                                    value={registerData.email}
-                                                    onChange={(e) => setRegisterData({...registerData, email: e.target.value})}
-                                                    className="input"
-                                                    placeholder="juan@email.com"
-                                                    required
-                                                    disabled={loading}
-                                                />
-                                            </div>
-
-                                            {/* Teléfono y Carrera */}
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="block text-sm text-slate-300 mb-1">Teléfono</label>
-                                                    <input 
-                                                        type="tel"
-                                                        value={registerData.telefono}
-                                                        onChange={(e) => setRegisterData({...registerData, telefono: e.target.value})}
-                                                        className="input"
-                                                        placeholder="+56912345678"
-                                                        disabled={loading}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="block text-sm text-slate-300 mb-1">Carrera</label>
-                                                    <input 
-                                                        type="text"
-                                                        value={registerData.carrera}
-                                                        onChange={(e) => setRegisterData({...registerData, carrera: e.target.value})}
-                                                        className="input"
-                                                        placeholder="Ingeniería"
-                                                        disabled={loading}
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            {/* Contraseñas */}
-                                            <div>
-                                                <label className="block text-sm text-slate-300 mb-1">Contraseña *</label>
-                                                <input 
-                                                    type="password"
-                                                    value={registerData.password}
-                                                    onChange={(e) => setRegisterData({...registerData, password: e.target.value})}
-                                                    className="input"
-                                                    placeholder="Mínimo 8 caracteres"
-                                                    required
-                                                    disabled={loading}
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <label className="block text-sm text-slate-300 mb-1">Confirmar Contraseña *</label>
-                                                <input 
-                                                    type="password"
-                                                    value={registerData.password2}
-                                                    onChange={(e) => setRegisterData({...registerData, password2: e.target.value})}
-                                                    className="input"
-                                                    placeholder="Repite la contraseña"
-                                                    required
-                                                    disabled={loading}
-                                                />
-                                            </div>
-
-                                            <button
-                                                type="submit"
-                                                disabled={loading}
-                                                className="btn-primary w-full"
-                                            >
-                                                {loading ? (
-                                                    <>
-                                                        <i className="fas fa-spinner fa-spin mr-2"></i>
-                                                        Registrando...
-                                                    </>
-                                                ) : 'Crear Cuenta'}
-                                            </button>
-                                        </div>
-                                    </form>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* FOOTER */}
-                        <div className="text-center mt-6 text-slate-400 text-sm">
-                            <p>Sistema de Reservas © 2024</p>
-                            <a href="/" className="text-blue-400 hover:text-blue-300 mt-2 inline-block">
-                                <i className="fas fa-home mr-1"></i>
-                                Volver al inicio
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            );
+            })
+            .catch(err => {
+                console.error(err);
+                showError("Error al conectar con el servidor");
+            });
         }
 
-        // RENDER
-        ReactDOM.render(<AuthPage />, document.getElementById('root'));
+        function showError(msg) {
+            document.getElementById("errorBox").innerHTML = `
+                <div class="error">${msg}</div>
+            `;
+        }
     </script>
 </body>
 </html>
