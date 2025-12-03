@@ -1,0 +1,240 @@
+<!-- Archivo: templates/index.html -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Reservas - API</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="logo-container">
+            <div class="logo">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+            <h1>Sistema de Reservas</h1>
+            <p class="tagline">API RESTful Profesional</p>
+        </div>
+
+        <div class="status">
+            <i class="fas fa-circle-check"></i>
+            <span>API ACTIVA Y FUNCIONANDO</span>
+        </div>
+
+        <p class="description">
+            Sistema profesional de gestión de reservas de salas de estudio. 
+            API RESTful desarrollada con Django REST Framework, con autenticación JWT, 
+            validaciones avanzadas y documentación completa.
+        </p>
+
+        <div class="cta-buttons">
+            <a href="{% url 'cliente' %}" class="btn">
+                <i class="fas fa-globe"></i>
+                <span>Abrir Aplicación Cliente</span>
+            </a>
+            <a href="/admin/" class="btn btn-secondary" target="_blank">
+                <i class="fas fa-cog"></i>
+                <span>Panel de Administración</span>
+            </a>
+        </div>
+
+        <div class="features">
+            <div class="feature">
+                <i class="fas fa-bolt"></i>
+                <h3>Rendimiento Óptimo</h3>
+                <p>Optimizado para alta concurrencia y respuestas rápidas</p>
+            </div>
+            <div class="feature">
+                <i class="fas fa-shield-alt"></i>
+                <h3>Seguridad Avanzada</h3>
+                <p>Autenticación JWT y validaciones de seguridad</p>
+            </div>
+            <div class="feature">
+                <i class="fas fa-code"></i>
+                <h3>API RESTful</h3>
+                <p>Endpoints REST estándar con documentación completa</p>
+            </div>
+            <div class="feature">
+                <i class="fas fa-database"></i>
+                <h3>Base de Datos MySQL</h3>
+                <p>Almacenamiento robusto y escalable</p>
+            </div>
+        </div>
+
+        <div class="endpoints-section">
+            <h2>
+                <i class="fas fa-network-wired"></i>
+                Endpoints Disponibles
+            </h2>
+            
+            <div class="endpoints-grid">
+                <div class="endpoint-category">
+                    <div class="category-header">
+                        <i class="fas fa-door-open"></i>
+                        <h3>Salas</h3>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="method get">GET</span>
+                        <a href="/api/salas/" target="_blank">/api/salas/</a>
+                        <p class="description">Listar todas las salas</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="method post">POST</span>
+                        <span>/api/salas/</span>
+                        <p class="description">Crear nueva sala</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="method get">GET</span>
+                        <span>/api/salas/{id}/</span>
+                        <p class="description">Ver detalle de sala</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="method put">PUT</span>
+                        <span>/api/salas/{id}/</span>
+                        <p class="description">Actualizar sala completa</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="method patch">PATCH</span>
+                        <span>/api/salas/{id}/</span>
+                        <p class="description">Actualizar parcialmente</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="method delete">DELETE</span>
+                        <span>/api/salas/{id}/</span>
+                        <p class="description">Eliminar sala</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="method get">GET</span>
+                        <a href="/api/salas/disponibles/" target="_blank">/api/salas/disponibles/</a>
+                        <p class="description">Solo salas disponibles</p>
+                    </div>
+                </div>
+
+                <div class="endpoint-category">
+                    <div class="category-header">
+                        <i class="fas fa-users"></i>
+                        <h3>Usuarios</h3>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="method get">GET</span>
+                        <a href="/api/usuarios/" target="_blank">/api/usuarios/</a>
+                        <p class="description">Listar todos los usuarios</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="method post">POST</span>
+                        <span>/api/usuarios/</span>
+                        <p class="description">Crear nuevo usuario</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="method get">GET</span>
+                        <span>/api/usuarios/{id}/</span>
+                        <p class="description">Ver detalle de usuario</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="method put">PUT</span>
+                        <span>/api/usuarios/{id}/</span>
+                        <p class="description">Actualizar usuario completo</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="method patch">PATCH</span>
+                        <span>/api/usuarios/{id}/</span>
+                        <p class="description">Actualizar parcialmente</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="method delete">DELETE</span>
+                        <span>/api/usuarios/{id}/</span>
+                        <p class="description">Eliminar usuario</p>
+                    </div>
+                </div>
+
+                <div class="endpoint-category">
+                    <div class="category-header">
+                        <i class="fas fa-calendar-check"></i>
+                        <h3>Reservas</h3>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="method get">GET</span>
+                        <a href="/api/reservas/" target="_blank">/api/reservas/</a>
+                        <p class="description">Listar todas las reservas</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="method post">POST</span>
+                        <span>/api/reservas/</span>
+                        <p class="description">Crear nueva reserva</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="method get">GET</span>
+                        <span>/api/reservas/{id}/</span>
+                        <p class="description">Ver detalle de reserva</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="method put">PUT</span>
+                        <span>/api/reservas/{id}/</span>
+                        <p class="description">Actualizar reserva completa</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="method delete">DELETE</span>
+                        <span>/api/reservas/{id}/</span>
+                        <p class="description">Eliminar reserva</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="method post">POST</span>
+                        <span>/api/reservas/{id}/confirmar/</span>
+                        <p class="description">Confirmar reserva pendiente</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="method post">POST</span>
+                        <span>/api/reservas/{id}/cancelar/</span>
+                        <p class="description">Cancelar reserva</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="method get">GET</span>
+                        <a href="/api/reservas/hoy/" target="_blank">/api/reservas/hoy/</a>
+                        <p class="description">Reservas del día de hoy</p>
+                    </div>
+                    <div class="endpoint-item">
+                        <span class="method get">GET</span>
+                        <a href="/api/reservas/pendientes/" target="_blank">/api/reservas/pendientes/</a>
+                        <p class="description">Reservas pendientes de confirmación</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>
+                <i class="fas fa-lightbulb"></i>
+                <span>Haz clic en los enlaces para probar los endpoints directamente</span>
+            </p>
+        </footer>
+    </div>
+
+    <script>
+        // Efecto de escritura para el título
+        document.addEventListener('DOMContentLoaded', function() {
+            const status = document.querySelector('.status');
+            setInterval(() => {
+                status.style.animation = 'none';
+                setTimeout(() => {
+                    status.style.animation = 'statusGlow 3s infinite alternate';
+                }, 10);
+            }, 3000);
+
+            // Efecto hover mejorado para cards
+            const cards = document.querySelectorAll('.endpoint-category, .feature');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', () => {
+                    card.style.transform = 'translateY(-8px)';
+                });
+                card.addEventListener('mouseleave', () => {
+                    card.style.transform = 'translateY(0)';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

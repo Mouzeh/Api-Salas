@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Reservas - Cliente</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/cliente.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <h1><i class="fas fa-calendar-alt"></i> Sistema de Reservas</h1>
+            <p class="subtitle">Aplicación Cliente</p>
+        </header>
+        
+        <main class="main-content">
+            <div class="header-actions">
+                <a href="/" class="btn btn-primary">
+                    <i class="fas fa-home"></i> Volver al inicio
+                </a>
+                <a href="/admin/" class="btn btn-secondary" target="_blank">
+                    <i class="fas fa-cog"></i> Panel Admin
+                </a>
+            </div>
+            
+            <div class="empty-state">
+                <i class="fas fa-mobile-alt"></i>
+                <h3>Aplicación Cliente</h3>
+                <p>Para ver la aplicación React completa, accede directamente al archivo:</p>
+                <a href="/static/cliente/index.html" class="btn btn-primary" style="margin-top: 20px;">
+                    <i class="fas fa-external-link-alt"></i> Abrir Aplicación React
+                </a>
+            </div>
+            
+            <div style="margin-top: 40px; padding: 20px; background: rgba(255,255,255,0.05); border-radius: 12px;">
+                <h3><i class="fas fa-info-circle"></i> Información</h3>
+                <p>La aplicación React se está ejecutando como archivo estático para evitar conflictos con Django Templates.</p>
+                <p>Características disponibles:</p>
+                <ul style="margin: 15px 0 15px 20px;">
+                    <li>Visualización de salas disponibles</li>
+                    <li>Creación de reservas</li>
+                    <li>Gestión de reservas propias</li>
+                    <li>Interfaz moderna y responsive</li>
+                </ul>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

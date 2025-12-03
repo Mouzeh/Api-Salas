@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Reservas - Salas de Estudio</title>
+    <link rel="stylesheet" href="/static/css/cliente.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // TODO: Copia todo el código React aquí
+        // Por ahora, contenido básico
+        const { useState, useEffect } = React;
+        
+        function App() {
+            const [loading, setLoading] = useState(true);
+            
+            useEffect(() => {
+                setTimeout(() => {
+                    setLoading(false);
+                }, 1000);
+            }, []);
+            
+            if (loading) {
+                return React.createElement('div', {className: 'loading-container'}, 
+                    React.createElement('div', {className: 'loading-spinner'}, null),
+                    React.createElement('p', null, 'Cargando aplicación cliente...')
+                );
+            }
+            
+            return React.createElement('div', {className: 'app-container'}, 
+                React.createElement('header', {className: 'app-header'}, 
+                    React.createElement('h1', null, 
+                        React.createElement('i', {className: 'fas fa-calendar-alt'}, null),
+                        ' Sistema de Reservas'
+                    ),
+                    React.createElement('p', {className: 'subtitle'}, 'Gestión profesional de salas de estudio')
+                ),
+                React.createElement('main', {className: 'main-content'}, 
+                    React.createElement('div', {className: 'header-actions'}, 
+                        React.createElement('a', {href: '/', className: 'btn btn-primary'}, 
+                            React.createElement('i', {className: 'fas fa-home'}, null),
+                            ' Volver al inicio'
+                        )
+                    ),
+                    React.createElement('div', {className: 'empty-state'}, 
+                        React.createElement('i', {className: 'fas fa-mobile-alt'}, null),
+                        React.createElement('h3', null, 'Aplicación React'),
+                        React.createElement('p', null, 'Esta es la aplicación cliente desarrollada con React')
+                    )
+                )
+            );
+        }
+        
+        ReactDOM.render(React.createElement(App), document.getElementById('root'));
+    </script>
+</body>
+</html>
